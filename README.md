@@ -83,6 +83,10 @@ Or register a fresh company at `/sign-up`.
 
 ### Accounts
 
+Every address must be confirmed through an emailed link before the account can
+be used (SRS 3.1.1). Set `RESEND_API_KEY` to send real mail; without it the link
+is written to the server log, so the flow is fully usable in development.
+
 Employees do not register themselves. Sign-up creates a **company and its first
 administrator**; from there an administrator or HR officer adds employees, and Dayflow
 issues each one a Login ID and a first password. The employee is forced to replace that
@@ -169,7 +173,6 @@ No model changes are needed.
 
 Tracked for the branches that follow this MVP:
 
-- Email verification at sign-up and password reset by email
 - Object storage for avatars, logos and certificates (currently inline data URLs)
 - Payslip generation and PDF export
 - Notifications, and an analytics dashboard

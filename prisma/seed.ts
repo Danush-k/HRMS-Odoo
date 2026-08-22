@@ -62,6 +62,7 @@ async function main() {
         email: `${person.firstName}.${person.lastName}`.toLowerCase() + "@odooindia.example",
         passwordHash,
         mustChangePassword: false,
+        emailVerifiedAt: new Date(),
         role: person.role,
         firstName: person.firstName,
         lastName: person.lastName,

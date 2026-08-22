@@ -43,6 +43,9 @@ model Employee {
   /// device out at once, which is what a password change has to do.
   sessionsValidFrom DateTime @default(now())
 
+  /// Null until the address has been confirmed through an emailed link.
+  emailVerifiedAt DateTime?
+
   firstName   String
   lastName    String
   jobPosition String?
@@ -87,6 +90,7 @@ model Employee {
   leaveRequests    LeaveRequest[] @relation("Requester")
   reviewedRequests LeaveRequest[] @relation("Reviewer")
   leaveBalances    LeaveBalance[]
+  tokens           VerificationToken[]
 
   @@index([companyId])
 }
@@ -185,6 +189,23 @@ model Attendance {
 
   @@unique([employeeId, date])
   @@index([date])
+}
+
+/// A single-use, time-limited link. Only the SHA-256 of the token is stored, so
+/// a copy of the database does not hand over working links.
+model VerificationToken {
+  id         String    @id @default(cuid())
+  employeeId String
+  tokenHash  String    @unique
+  purpose    String // EMAIL_VERIFICATION | PASSWORD_RESET
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, purpose])
+  @@index([expiresAt])
 }
 
 /// One row per sign-in attempt, successful or not. Backs the rate limit and

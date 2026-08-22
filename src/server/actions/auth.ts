@@ -10,6 +10,7 @@ import { db } from "@/lib/db";
 import { generateLoginId, generateToken, uniqueCompanyCode } from "@/lib/ids";
 import { checkLockout, clientIp, lockoutMessage, recordAttempt } from "@/lib/rate-limit";
 import { createSession, destroySession } from "@/lib/session";
+import { sendVerificationEmail } from "@/lib/verification";
 import { changePasswordSchema, fieldErrors, signInSchema, signUpSchema } from "@/lib/validations";
 import { failure, success, type ActionState } from "@/lib/action-state";
 
@@ -109,6 +110,8 @@ export async function signUpAction(_prev: ActionState, form: FormData): Promise<
     })),
   });
 
+  await sendVerificationEmail(admin, { newAccount: true });
+
   await createSession({
     employeeId: admin.id,
     companyId: company.id,
@@ -116,7 +119,7 @@ export async function signUpAction(_prev: ActionState, form: FormData): Promise<
     loginId: admin.loginId,
   });
 
-  redirect("/employees");
+  redirect("/verify-email");
 }
 
 export async function signInAction(_prev: ActionState, form: FormData): Promise<ActionState> {

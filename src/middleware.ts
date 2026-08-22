@@ -1,7 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const SESSION_COOKIE = "dayflow_session";
-const PUBLIC_PATHS = ["/sign-in", "/sign-up"];
+/** Reachable without a session. Emailed links land here, often signed out. */
+const PUBLIC_PATHS = ["/sign-in", "/sign-up", "/verify-email", "/forgot-password", "/reset-password"];
+
+/** Pointless once signed in, so a signed-in visitor is sent onward instead. */
+const SIGNED_OUT_ONLY = ["/sign-in", "/sign-up"];
 
 /**
  * A coarse gate that keeps signed-out visitors off the application shell.
@@ -12,6 +16,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
   const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+  const isSignedOutOnly = SIGNED_OUT_ONLY.some((path) => pathname.startsWith(path));
 
   if (!hasSession && !isPublic) {
     const url = request.nextUrl.clone();
@@ -20,7 +25,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (hasSession && isPublic) {
+  if (hasSession && isSignedOutOnly) {
     const url = request.nextUrl.clone();
     url.pathname = "/employees";
     url.search = "";
