@@ -73,10 +73,10 @@ export function Tabs({ items, initial }: { items: TabItem[]; initial?: string })
               aria-controls={`panel-${item.id}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(item.id)}
-              className={`-mb-px rounded-t-md border-b-2 px-4 py-2.5 text-sm transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 ${
+              className={`-mb-px rounded-t-lg border-b-2 px-4 py-2.5 text-sm transition-all focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 ${
                 selected
-                  ? "border-brand-600 font-semibold text-brand-700"
-                  : "border-transparent font-medium text-ink-500 hover:text-ink-800"
+                  ? "border-brand-600 font-bold text-brand-700 bg-brand-50/40"
+                  : "border-transparent font-medium text-ink-500 hover:text-ink-900 hover:bg-ink-50/50"
               }`}
             >
               {item.label}

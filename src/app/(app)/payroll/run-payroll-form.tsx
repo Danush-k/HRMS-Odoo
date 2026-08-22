@@ -128,7 +128,7 @@ export function RunPayrollForm({
         className="btn-primary rounded-xl inline-flex items-center gap-2 shadow-xs transition active:scale-[0.99]"
       >
         <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
-          <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" />
+          <path fillRule="evenodd" d="M1 4a1 1 0 011-1h16a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4zm12 4a3 3 0 11-6 0 3 3 0 016 0zM4 9a1 1 0 100-2 1 1 0 000 2zm12 0a1 1 0 100-2 1 1 0 000 2zM2 15a1 1 0 00-1 1v1a1 1 0 001 1h16a1 1 0 001-1v-1a1 1 0 00-1-1H2z" clipRule="evenodd" />
         </svg>
         <span>Run payroll for {label}</span>
       </button>
@@ -362,7 +362,9 @@ export function RunPayrollForm({
                       </>
                     ) : (
                       <>
-                        <span>⚡</span>
+                        <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                        </svg>
                         <span>
                           {mode === "ALL"
                             ? `Process Payroll (${employees.length} Employees)`

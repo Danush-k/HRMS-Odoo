@@ -137,10 +137,13 @@ export function TimeOffCalendarView({
 
               {isHoliday ? (
                 <span
-                  className="inline-block self-start max-w-full truncate rounded bg-purple-600 px-1 py-0.5 text-[9px] font-medium text-white"
+                  className="inline-flex items-center gap-1 self-start max-w-full truncate rounded bg-brand-700 px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-2xs"
                   title={holidayName}
                 >
-                  🎉 {holidayName}
+                  <svg viewBox="0 0 20 20" width="10" height="10" fill="currentColor" className="shrink-0">
+                    <path fillRule="evenodd" d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l1.122 1.12A1.5 1.5 0 0014.62 4H16.5A1.5 1.5 0 0118 5.5v7a1.5 1.5 0 01-1.5 1.5h-4.879a1.5 1.5 0 01-1.06-.44l-1.122-1.12A1.5 1.5 0 008.38 12H4.5A1.5 1.5 0 013 10.5v-7zM2.25 18a.75.75 0 01.75-.75h14a.75.75 0 010 1.5H3a.75.75 0 01-.75-.75z" clipRule="evenodd" />
+                  </svg>
+                  <span className="truncate">{holidayName}</span>
                 </span>
               ) : null}
 
