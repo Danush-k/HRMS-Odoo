@@ -457,6 +457,10 @@ export default async function EmployeesPage({
     employees.map((emp) => [emp.id, statusMap.get(emp.id) || "ABSENT"])
   );
 
+  const userAttendanceStatus = statusMap.get(user.id) ?? "ABSENT";
+  const userCheckedIn = userAttendanceStatus === "PRESENT" || userAttendanceStatus === "HALF_DAY";
+  const userOnLeave = userAttendanceStatus === "LEAVE";
+
   return (
     <div className="flex flex-col gap-6">
       {denied ? (
@@ -468,29 +472,49 @@ export default async function EmployeesPage({
         </div>
       ) : null}
 
-      {/* Header Section */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">Admin & HR Dashboard</h1>
-            <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-              {totalEmployees} {totalEmployees === 1 ? "Member" : "Members"}
-            </span>
+      {/* Welcome Header Card for Admin & HR */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-brand-200/80 bg-gradient-to-r from-brand-50 to-surface p-6 shadow-xs">
+        <div className="flex items-center gap-4">
+          <Avatar src={user.avatar} name={`${user.firstName} ${user.lastName}`} size={64} />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-ink-900">Welcome back, {user.firstName}!</h1>
+              <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+                {user.role}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-ink-600">
+              {user.jobPosition || (user.role === "ADMIN" ? "Administrator" : "HR Officer")} • {user.department || user.company.name}
+            </p>
+            <p className="mono mt-1 text-xs text-brand-600 font-semibold">ID: {user.loginId}</p>
           </div>
-          <p className="mt-1 text-sm text-ink-500">
-            Manage employees, inspect attendance, and review leave approvals for <strong className="font-semibold text-ink-700">{user.company.name}</strong>
-          </p>
         </div>
 
-        <Link
-          href="/employees/new"
-          className="btn-primary inline-flex items-center gap-2 shadow-xs transition-transform active:scale-[0.98]"
-        >
-          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
-            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-          </svg>
-          Add Employee
-        </Link>
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg bg-surface p-3 border border-line shadow-2xs">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-500">Attendance Status</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${
+                  userCheckedIn ? "bg-present animate-pulse" : userOnLeave ? "bg-leave" : "bg-absent"
+                }`}
+              />
+              <span className="text-xs font-bold text-ink-900">
+                {userCheckedIn ? "Checked In" : userOnLeave ? "On Leave" : "Not Checked In"}
+              </span>
+            </div>
+          </div>
+
+          <Link
+            href="/employees/new"
+            className="btn-primary inline-flex items-center gap-2 shadow-xs transition-transform active:scale-[0.98] h-[50px] px-4"
+          >
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+              <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+            </svg>
+            Add Employee
+          </Link>
+        </div>
       </div>
 
       {/* Stats Summary Cards */}
