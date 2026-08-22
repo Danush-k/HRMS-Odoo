@@ -378,9 +378,12 @@ export function PayrollTable({
                                 type="button"
                                 onClick={() => handleGenerateSingle(emp.id, `${emp.firstName} ${emp.lastName}`)}
                                 disabled={isGenerating}
-                                className="btn-approve btn-sm text-[10px] py-0.5 px-2 rounded-md"
+                                className="btn-approve btn-sm text-[10px] py-0.5 px-2 rounded-md inline-flex items-center gap-1"
                               >
-                                ⚡ Generate
+                                <svg viewBox="0 0 20 20" width="10" height="10" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                </svg>
+                                <span>Generate</span>
                               </button>
                             )}
                             <button
@@ -577,11 +580,13 @@ export function PayrollTable({
                           <button
                             type="button"
                             onClick={() => setActiveTooltipId(isTooltipOpen ? null : employee.id)}
-                            className="font-medium text-ink-900 hover:text-brand-700 hover:underline cursor-pointer flex items-center gap-1"
+                            className="font-medium text-ink-900 hover:text-brand-700 hover:underline cursor-pointer flex items-center gap-1.5"
                             title="Click to view component breakdown"
                           >
                             <span>{formatCurrency(payslip.grossMonthly)}</span>
-                            <span className="text-[10px] text-ink-400">ℹ</span>
+                            <svg viewBox="0 0 20 20" width="13" height="13" fill="currentColor" className="text-ink-400 hover:text-brand-600">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                            </svg>
                           </button>
 
                           {/* Quick Component Breakdown Tooltip Popover (opens upward for bottom rows) */}
@@ -696,7 +701,7 @@ export function PayrollTable({
                               type="button"
                               onClick={() => handleGenerateSingle(employee.id, `${employee.firstName} ${employee.lastName}`)}
                               disabled={isThisGenerating || isGenerating}
-                              className="btn-approve btn-sm inline-flex items-center gap-1 text-xs rounded-lg shadow-xs"
+                              className="btn-approve btn-sm inline-flex items-center gap-1.5 text-xs rounded-lg shadow-xs"
                               title="Generate payslip for this employee only"
                             >
                               {isThisGenerating ? (
@@ -709,7 +714,9 @@ export function PayrollTable({
                                 </>
                               ) : (
                                 <>
-                                  <span>⚡</span>
+                                  <svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                  </svg>
                                   <span>Generate</span>
                                 </>
                               )}
