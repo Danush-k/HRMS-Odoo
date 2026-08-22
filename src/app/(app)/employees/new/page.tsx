@@ -39,6 +39,7 @@ export default async function NewEmployeePage() {
       </div>
 
       <NewEmployeeForm
+        actorRole={actor.role}
         colleagues={colleagues.map((person) => ({
           id: person.id,
           name: `${person.firstName} ${person.lastName}`,
