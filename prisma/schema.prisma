@@ -23,8 +23,10 @@ model Company {
   standardWorkHours  Float    @default(8)
   createdAt          DateTime @default(now())
 
-  employees  Employee[]
-  leaveTypes LeaveType[]
+  employees       Employee[]
+  leaveTypes      LeaveType[]
+  auditLogs       AuditLog[]
+  publicHolidays  PublicHoliday[]
 }
 
 /// A person. Also the authentication principal — there is no separate user table,
@@ -83,6 +85,8 @@ model Employee {
   leaveRequests    LeaveRequest[] @relation("Requester")
   reviewedRequests LeaveRequest[] @relation("Reviewer")
   leaveBalances    LeaveBalance[]
+  documents        Document[]
+  auditLogs        AuditLog[]
 
   @@index([companyId])
 }
@@ -182,3 +186,54 @@ model Attendance {
   @@unique([employeeId, date])
   @@index([date])
 }
+
+/// An HR or employee document/certificate attachment.
+model Document {
+  id         String   @id @default(cuid())
+  employeeId String
+  name       String
+  category   String   // CONTRACT | RESUME | IDENTIFICATION | MEDICAL | OTHER
+  fileUrl    String
+  fileSize   Int
+  mimeType   String
+  uploadedAt DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+}
+
+/// Audit log for recording critical actions (attendance adjustments, salary edits, leave overrides).
+model AuditLog {
+  id         String   @id @default(cuid())
+  companyId  String
+  actorId    String
+  action     String   // ATTENDANCE_UPDATE | SALARY_UPDATE | LEAVE_OVERRIDE | PROFILE_UPDATE
+  targetType String   // Employee | Attendance | Salary | LeaveRequest
+  targetId   String
+  changes    String   // JSON payload of changes
+  createdAt  DateTime @default(now())
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  actor   Employee @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([targetType, targetId])
+}
+
+/// L10 — a company-wide public holiday. Working days falling on one of these
+/// dates are not charged to an employee's leave balance.
+model PublicHoliday {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String // e.g. "Independence Day", "Diwali", "New Year's Day"
+  date        DateTime // Normalised UTC midnight date
+  isRecurring Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, date])
+  @@index([companyId])
+}
+
