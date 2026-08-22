@@ -86,17 +86,14 @@ export function NewEmployeeForm({ colleagues }: { colleagues: { id: string; name
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Role" name="role" hint="All newly created staff members are assigned the Employee role.">
-          <input type="hidden" name="role" value="EMPLOYEE" />
-          <div className="flex h-10 items-center justify-between rounded-lg border border-line bg-ink-50/70 px-3.5 text-sm font-medium text-ink-800 shadow-2xs">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-brand-600" />
-              <span>Employee</span>
-            </div>
-            <span className="rounded bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 border border-brand-200">
-              Standard Role
-            </span>
-          </div>
+        <Field label="Role" name="role" error={state.errors?.role} required>
+          <Select name="role" defaultValue="EMPLOYEE">
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABEL[r]}
+              </option>
+            ))}
+          </Select>
         </Field>
         <Field label="Manager" name="managerId" error={state.errors?.managerId}>
           <Select name="managerId" defaultValue="">

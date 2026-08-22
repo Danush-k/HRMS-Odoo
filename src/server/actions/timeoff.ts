@@ -102,10 +102,10 @@ export async function requestLeaveAction(_prev: ActionState, form: FormData): Pr
   }
 
   // L10 — fetch company public holidays inside the requested interval.
-  const holidays = await db.publicHoliday.findMany({
+  const holidays = await (db as any).publicHoliday.findMany({
     where: { companyId: actor.companyId, date: { gte: start, lte: end } },
   });
-  const holidayDates = holidays.map((h) => h.date);
+  const holidayDates = holidays.map((h: { date: Date }) => h.date);
 
   // Working days exclude weekends AND public holidays:
   const days = countWorkingDays(start, end, holidayDates);
@@ -197,10 +197,10 @@ export async function reviewLeaveAction(_prev: ActionState, form: FormData): Pro
       if (decision !== "APPROVED") return;
 
       // L10 — public holidays inside the leave range are not leave days either.
-      const holidays = await tx.publicHoliday.findMany({
+      const holidays = await (tx as any).publicHoliday.findMany({
         where: { companyId: actor.companyId, date: { gte: request.startDate, lte: request.endDate } },
       });
-      const holidayDates = holidays.map((h) => h.date);
+      const holidayDates = holidays.map((h: { date: Date }) => h.date);
 
       if (request.leaveType.isPaid) {
         const year = request.startDate.getFullYear();
@@ -292,10 +292,10 @@ export async function cancelLeaveAction(_prev: ActionState, form: FormData): Pro
       });
 
       // L10 — holidays were never marked as leave days, so skip them here too.
-      const holidays = await tx.publicHoliday.findMany({
+      const holidays = await (tx as any).publicHoliday.findMany({
         where: { companyId: actor.companyId, date: { gte: request.startDate, lte: request.endDate } },
       });
-      const holidayDates = holidays.map((h) => h.date);
+      const holidayDates = holidays.map((h: { date: Date }) => h.date);
 
       // Clear attendance leave records
       for (const day of eachWorkingDay(request.startDate, request.endDate, holidayDates)) {

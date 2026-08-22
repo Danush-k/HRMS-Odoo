@@ -144,12 +144,10 @@ export function DetailsForm({
               <dd className="font-semibold text-ink-900 mt-0.5">{formData.department || "—"}</dd>
             </div>
 
-            {isEmployee ? (
-              <div>
-                <dt className="text-xs font-medium text-ink-500">Reporting Manager</dt>
-                <dd className="font-semibold text-ink-900 mt-0.5">{managerName || "No manager assigned"}</dd>
-              </div>
-            ) : null}
+            <div>
+              <dt className="text-xs font-medium text-ink-500">Reporting Manager</dt>
+              <dd className="font-semibold text-ink-900 mt-0.5">{managerName || "No manager assigned"}</dd>
+            </div>
 
             <div>
               <dt className="text-xs font-medium text-ink-500">Office Location</dt>
@@ -272,88 +270,58 @@ export function DetailsForm({
                   />
                 </Field>
 
-                {isEmployee ? (
-                  <>
-                    <Field label="Manager" name="managerId" error={state.errors?.managerId}>
-                      <Select
-                        name="managerId"
-                        value={formData.managerId}
-                        onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
-                        disabled={!isManager}
-                      >
-                        <option value="">No manager</option>
-                        {colleagues.map((person) => (
-                          <option key={person.id} value={person.id}>
-                            {person.name}
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
+                <Field label="Manager" name="managerId" error={state.errors?.managerId}>
+                  <Select
+                    name="managerId"
+                    value={formData.managerId}
+                    onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+                    disabled={!isManager}
+                  >
+                    <option value="">No manager</option>
+                    {colleagues.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
 
-                    <Field label="Location" name="location" error={state.errors?.location}>
-                      <Input
-                        name="location"
-                        value={formData.location}
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        disabled={!isManager}
-                      />
-                    </Field>
+                <Field label="Location" name="location" error={state.errors?.location}>
+                  <Input
+                    name="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    disabled={!isManager}
+                  />
+                </Field>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Role" name="role" error={state.errors?.role}>
-                        <Select
-                          name="role"
-                          value={formData.role}
-                          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                          disabled={!isManager}
-                        >
-                          {ROLES.map((role) => (
-                            <option key={role} value={role}>
-                              {ROLE_LABEL[role]}
-                            </option>
-                          ))}
-                        </Select>
-                      </Field>
-                      <Field label="Status" name="status" error={state.errors?.status}>
-                        <Select
-                          name="status"
-                          value={formData.status}
-                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                          disabled={!isManager}
-                        >
-                          <option value="ACTIVE">Active</option>
-                          <option value="INACTIVE">Inactive</option>
-                        </Select>
-                      </Field>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Field label="Location" name="location" error={state.errors?.location}>
-                      <Input
-                        name="location"
-                        value={formData.location}
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        disabled={!isManager}
-                      />
-                    </Field>
-
-                    <Field label="Role" name="role" error={state.errors?.role}>
-                      <Select
-                        name="role"
-                        value={formData.role}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                        disabled={!isManager}
-                      >
-                        {ROLES.map((role) => (
-                          <option key={role} value={role}>
-                            {ROLE_LABEL[role]}
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
-                  </>
-                )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Role" name="role" error={state.errors?.role}>
+                    <Select
+                      name="role"
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      disabled={!isManager}
+                    >
+                      {ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {ROLE_LABEL[role]}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Status" name="status" error={state.errors?.status}>
+                    <Select
+                      name="status"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      disabled={!isManager}
+                    >
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                    </Select>
+                  </Field>
+                </div>
               </div>
             </div>
           </div>
