@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { EmployeeProfileNav } from "@/components/employee-profile-nav";
 import { Tabs } from "@/components/tabs";
 import { Avatar, LeaveChip } from "@/components/ui";
 import { canEditEmployee, canEditSalary, canViewDocuments, canViewPrivateInfo, canViewSalary, isManager, requireUser } from "@/lib/auth";
 import { ROLE_LABEL, type Role } from "@/lib/constants";
 import { formatDate, inputDate } from "@/lib/dates";
 import { db } from "@/lib/db";
+import { getEmployeeNavigationMeta } from "@/lib/employee-navigation";
 import { ChangePasswordForm } from "../../profile/change-password-form";
 import { DetailsForm } from "./details-form";
 import { DocumentsSection, type DocumentItem } from "./documents-section";
@@ -26,7 +28,7 @@ export default async function EmployeeProfilePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ tab?: string }>;
+  searchParams?: Promise<{ tab?: string; q?: string; status?: string }>;
 }) {
   const { id } = await params;
   const search = await searchParams;
@@ -294,17 +296,39 @@ export default async function EmployeeProfilePage({
     });
   }
 
+  const nav = managerView
+    ? await getEmployeeNavigationMeta({
+        companyId: viewer.companyId,
+        currentEmployeeId: employee.id,
+        searchParams: search,
+      })
+    : null;
+
   return (
-    <div className="flex flex-col gap-5">
-      <nav className="flex items-center gap-1.5 text-sm text-ink-500">
-        <Link href="/employees" className="hover:text-brand-600 hover:underline">
-          Employees
-        </Link>
-        <span aria-hidden="true">/</span>
-        <span className="font-medium text-ink-800">
-          {isSelf ? "My Profile" : `${employee.firstName} ${employee.lastName}`}
-        </span>
+    <div className="flex flex-col gap-5 animate-in fade-in duration-200">
+      <nav className="flex items-center justify-between text-sm text-ink-500">
+        <div className="flex items-center gap-1.5">
+          <Link
+            href={`/employees${
+              search?.q || (search?.status && search.status !== "ALL")
+                ? `?${new URLSearchParams({
+                    ...(search?.q ? { q: search.q } : {}),
+                    ...(search?.status ? { status: search.status } : {}),
+                  }).toString()}`
+                : ""
+            }`}
+            className="hover:text-brand-600 hover:underline"
+          >
+            Employees
+          </Link>
+          <span aria-hidden="true">/</span>
+          <span className="font-medium text-ink-800">
+            {isSelf ? "My Profile" : `${employee.firstName} ${employee.lastName}`}
+          </span>
+        </div>
       </nav>
+
+      {nav ? <EmployeeProfileNav nav={nav} /> : null}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
