@@ -47,6 +47,7 @@ export function AttendanceWidget({
           </span>
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => setShowConfirmModal(true)}
             disabled={pending}
             className="rounded bg-white px-2.5 py-1 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 disabled:opacity-60"
@@ -57,6 +58,7 @@ export function AttendanceWidget({
       ) : (
         <button
           type="button"
+          suppressHydrationWarning
           onClick={() => run(checkInAction)}
           disabled={pending}
           className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 disabled:opacity-60"
