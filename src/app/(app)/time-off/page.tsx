@@ -7,16 +7,32 @@ import { formatDate } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { CancelButton, ReviewButtons } from "./review-buttons";
 import { RequestLeaveButton, type LeaveTypeOption } from "./request-form";
+import { AllocationForm } from "./allocation-form";
+import { TimeOffCalendarView } from "./calendar-view";
+import { HolidayManager } from "./holiday-manager";
 
 export const metadata: Metadata = { title: "Time Off" };
 
-export default async function TimeOffPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
-  const { status } = await searchParams;
+type SearchParams = {
+  tab?: string;
+  view?: string;
+  status?: string;
+  page?: string;
+};
+
+export default async function TimeOffPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const params = await searchParams;
   const user = await requireUser();
   const manager = isManager(user.role);
   const year = new Date().getFullYear();
 
-  const [leaveTypes, balances, colleagues] = await Promise.all([
+  const activeTab = params.tab ?? "timeoff";
+  const activeView = params.view ?? "table";
+  const statusFilter = params.status?.toUpperCase();
+  const page = parseInt(params.page ?? "1", 10);
+  const pageSize = 20;
+
+  const [leaveTypes, balances, colleagues, publicHolidays] = await Promise.all([
     db.leaveType.findMany({ where: { companyId: user.companyId }, orderBy: { name: "asc" } }),
     db.leaveBalance.findMany({ where: { employeeId: user.id, year } }),
     manager
@@ -26,6 +42,11 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
           orderBy: { firstName: "asc" },
         })
       : Promise.resolve([]),
+    // L10 — company public holidays, newest first.
+    db.publicHoliday.findMany({
+      where: { companyId: user.companyId },
+      orderBy: { date: "asc" },
+    }),
   ]);
 
   const balanceOf = new Map(balances.map((balance) => [balance.leaveTypeId, balance]));
@@ -41,16 +62,23 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
     };
   });
 
-  const filter = status?.toUpperCase();
-  const requests = await db.leaveRequest.findMany({
-    where: {
-      ...(manager ? { employee: { companyId: user.companyId } } : { employeeId: user.id }),
-      ...(filter && filter !== "ALL" ? { status: filter } : {}),
-    },
-    include: { employee: true, leaveType: true, reviewer: true },
-    orderBy: [{ status: "asc" }, { startDate: "desc" }],
-    take: 100,
-  });
+  const filterWhere = {
+    ...(manager ? { employee: { companyId: user.companyId } } : { employeeId: user.id }),
+    ...(statusFilter && statusFilter !== "ALL" ? { status: statusFilter } : {}),
+  };
+
+  const [totalRequests, requests] = await Promise.all([
+    db.leaveRequest.count({ where: filterWhere }),
+    db.leaveRequest.findMany({
+      where: filterWhere,
+      include: { employee: true, leaveType: true, reviewer: true },
+      orderBy: [{ status: "asc" }, { startDate: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalRequests / pageSize);
 
   const pendingCount = await db.leaveRequest.count({
     where: { status: "PENDING", ...(manager ? { employee: { companyId: user.companyId } } : { employeeId: user.id }) },
@@ -62,8 +90,20 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
 
   const filters = ["ALL", "PENDING", "APPROVED", "REJECTED"];
 
+  const calendarItems = requests.map((req) => ({
+    id: req.id,
+    employeeId: req.employeeId,
+    employeeName: `${req.employee.firstName} ${req.employee.lastName}`,
+    startDate: req.startDate,
+    endDate: req.endDate,
+    leaveTypeName: req.leaveType.name,
+    status: req.status,
+    colour: req.leaveType.colour || "#7A3E8F",
+  }));
+
   return (
     <div className="flex flex-col gap-5">
+      {/* Header & Main Actions */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-ink-900">Time Off</h1>
@@ -73,126 +113,230 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
               : "Your requests and remaining allocation."}
           </p>
         </div>
-        <RequestLeaveButton
-          leaveTypes={options}
-          employees={employeeOptions}
-          defaultEmployeeId={user.id}
-          canFileForOthers={manager}
-        />
-      </div>
 
-      <section aria-label="Your allocation" className="grid gap-3 sm:grid-cols-3">
-        {options.map((option) => (
-          <div key={option.id} className="card px-4 py-3">
-            <p className="text-sm font-semibold text-brand-700">{option.name}</p>
-            <p className="num mt-1 text-lg font-semibold text-ink-900">
-              {option.isPaid ? `${option.available.toFixed(0)} Days Available` : "Unpaid"}
-            </p>
-            {option.isPaid ? (
-              <p className="hint mt-0.5">
-                {(balanceOf.get(option.id)?.used ?? 0).toFixed(0)} used of{" "}
-                {(balanceOf.get(option.id)?.allocated ?? 0).toFixed(0)} allocated in {year}
-              </p>
-            ) : (
-              <p className="hint mt-0.5">Does not consume a balance; the days are unpaid.</p>
-            )}
-          </div>
-        ))}
-      </section>
+        <div className="flex items-center gap-3">
+          {/* Admin / HR Tab Navigation: Time Off vs Allocation */}
+          {manager ? (
+            <div className="flex rounded-md border border-line bg-surface p-0.5 text-sm">
+              <Link
+                href={`/time-off?tab=timeoff&view=${activeView}`}
+                className={`rounded px-3 py-1.5 font-medium transition ${
+                  activeTab === "timeoff" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                }`}
+              >
+                Time Off
+              </Link>
+              <Link
+                href="/time-off?tab=allocation"
+                className={`rounded px-3 py-1.5 font-medium transition ${
+                  activeTab === "allocation" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                }`}
+              >
+                Allocation
+              </Link>
+            </div>
+          ) : null}
 
-      <div className="flex flex-wrap gap-1.5">
-        {filters.map((value) => {
-          const active = (filter ?? "ALL") === value;
-          return (
-            <Link
-              key={value}
-              href={value === "ALL" ? "/time-off" : `/time-off?status=${value.toLowerCase()}`}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                active ? "bg-brand-600 text-white" : "border border-line bg-surface text-ink-600 hover:bg-brand-50"
-              }`}
-            >
-              {value.charAt(0) + value.slice(1).toLowerCase()}
-            </Link>
-          );
-        })}
-      </div>
+          {/* View Toggle: Table View vs Calendar View */}
+          {activeTab === "timeoff" ? (
+            <div className="flex rounded-md border border-line bg-surface p-0.5 text-sm">
+              <Link
+                href={`/time-off?tab=timeoff&view=table${statusFilter ? `&status=${statusFilter.toLowerCase()}` : ""}`}
+                className={`rounded px-3 py-1.5 font-medium transition ${
+                  activeView === "table" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                }`}
+              >
+                Table View
+              </Link>
+              <Link
+                href={`/time-off?tab=timeoff&view=calendar${statusFilter ? `&status=${statusFilter.toLowerCase()}` : ""}`}
+                className={`rounded px-3 py-1.5 font-medium transition ${
+                  activeView === "calendar" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                }`}
+              >
+                Calendar View
+              </Link>
+            </div>
+          ) : null}
 
-      {requests.length === 0 ? (
-        <EmptyState
-          title="No requests"
-          description={
-            manager
-              ? "Nothing to review under this filter."
-              : "Use New to request paid, sick or unpaid time off."
-          }
-        />
-      ) : (
-        <div className="table-wrap">
-          <table className="grid-table min-w-[820px]">
-            <thead>
-              <tr>
-                <th>{manager ? "Name" : "Requested"}</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Time Off Type</th>
-                <th>Days</th>
-                <th>Status</th>
-                <th className="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.map((request) => (
-                <tr key={request.id}>
-                  <td>
-                    {manager ? (
-                      <Link href={`/employees/${request.employeeId}`} className="flex items-center gap-2.5 hover:text-brand-700">
-                        <Avatar
-                          src={request.employee.avatar}
-                          name={`${request.employee.firstName} ${request.employee.lastName}`}
-                          size={28}
-                        />
-                        <span className="font-medium">
-                          {request.employee.firstName} {request.employee.lastName}
-                        </span>
-                      </Link>
-                    ) : (
-                      <span className="num text-ink-500">{formatDate(request.createdAt)}</span>
-                    )}
-                  </td>
-                  <td className="num">{formatDate(request.startDate)}</td>
-                  <td className="num">{formatDate(request.endDate)}</td>
-                  <td>
-                    {request.leaveType.name}
-                    {request.attachment ? <span className="ml-2 text-[11px] text-brand-600">certificate</span> : null}
-                  </td>
-                  <td className="num">{request.days}</td>
-                  <td>
-                    <LeaveChip status={request.status} />
-                    {request.reviewComment ? (
-                      <p className="mt-1 max-w-56 text-[11px] text-ink-500">
-                        {request.reviewer ? `${request.reviewer.firstName}: ` : ""}
-                        {request.reviewComment}
-                      </p>
-                    ) : null}
-                    {request.remarks && !request.reviewComment ? (
-                      <p className="mt-1 max-w-56 text-[11px] text-ink-400">{request.remarks}</p>
-                    ) : null}
-                  </td>
-                  <td className="text-right">
-                    {request.status === "PENDING" && manager ? (
-                      <ReviewButtons requestId={request.id} />
-                    ) : request.status === "PENDING" && request.employeeId === user.id ? (
-                      <CancelButton requestId={request.id} />
-                    ) : (
-                      <span className="text-xs text-ink-400">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <RequestLeaveButton
+            leaveTypes={options}
+            employees={employeeOptions}
+            defaultEmployeeId={user.id}
+            canFileForOthers={manager}
+            publicHolidayDates={publicHolidays.map((h) => h.date.toISOString().slice(0, 10))}
+          />
         </div>
+      </div>
+
+      {/* Allocation Management Tab for Admin/HR (L7) */}
+      {activeTab === "allocation" && manager ? (
+        <div className="flex flex-col gap-6">
+          <AllocationForm
+            employees={colleagues.map((c) => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }))}
+            leaveTypes={leaveTypes.map((t) => ({ id: t.id, name: t.name }))}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Allocation Cards Header */}
+          <section aria-label="Your allocation" className="grid gap-3 sm:grid-cols-3">
+            {options.map((option) => (
+              <div key={option.id} className="card px-4 py-3">
+                <p className="text-sm font-semibold text-brand-700">{option.name}</p>
+                <p className="num mt-1 text-lg font-semibold text-ink-900">
+                  {option.isPaid ? `${option.available.toFixed(0)} Days Available` : "Unpaid"}
+                </p>
+                {option.isPaid ? (
+                  <p className="hint mt-0.5">
+                    {(balanceOf.get(option.id)?.used ?? 0).toFixed(0)} used of{" "}
+                    {(balanceOf.get(option.id)?.allocated ?? 0).toFixed(0)} allocated in {year}
+                  </p>
+                ) : (
+                  <p className="hint mt-0.5">Does not consume a balance; the days are unpaid.</p>
+                )}
+              </div>
+            ))}
+          </section>
+
+          {/* Status Filter Chips */}
+          <div className="flex flex-wrap gap-1.5">
+            {filters.map((value) => {
+              const active = (statusFilter ?? "ALL") === value;
+              return (
+                <Link
+                  key={value}
+                  href={`/time-off?tab=timeoff&view=${activeView}${value === "ALL" ? "" : `&status=${value.toLowerCase()}`}`}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                    active ? "bg-brand-600 text-white" : "border border-line bg-surface text-ink-600 hover:bg-brand-50"
+                  }`}
+                >
+                  {value.charAt(0) + value.slice(1).toLowerCase()}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Render Calendar View or Table View */}
+          {activeView === "calendar" ? (
+            <TimeOffCalendarView
+              requests={calendarItems}
+              publicHolidays={publicHolidays.map((h) => ({ id: h.id, name: h.name, date: h.date }))}
+            />
+          ) : requests.length === 0 ? (
+            <EmptyState
+              title="No requests"
+              description={
+                manager ? "Nothing to review under this filter." : "Use New to request paid, sick or unpaid time off."
+              }
+            />
+          ) : (
+            <div className="table-wrap flex flex-col gap-3">
+              <table className="grid-table min-w-[820px]">
+                <thead>
+                  <tr>
+                    <th>{manager ? "Name" : "Requested"}</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Time Off Type</th>
+                    <th>Days</th>
+                    <th>Status</th>
+                    <th className="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map((request) => (
+                    <tr key={request.id}>
+                      <td>
+                        {manager ? (
+                          <Link href={`/employees/${request.employeeId}`} className="flex items-center gap-2.5 hover:text-brand-700">
+                            <Avatar
+                              src={request.employee.avatar}
+                              name={`${request.employee.firstName} ${request.employee.lastName}`}
+                              size={28}
+                            />
+                            <span className="font-medium">
+                              {request.employee.firstName} {request.employee.lastName}
+                            </span>
+                          </Link>
+                        ) : (
+                          <span className="num text-ink-500">{formatDate(request.createdAt)}</span>
+                        )}
+                      </td>
+                      <td className="num">{formatDate(request.startDate)}</td>
+                      <td className="num">{formatDate(request.endDate)}</td>
+                      <td>
+                        {request.leaveType.name}
+                        {request.attachment ? <span className="ml-2 text-[11px] text-brand-600">certificate</span> : null}
+                      </td>
+                      <td className="num">{request.days}</td>
+                      <td>
+                        <LeaveChip status={request.status} />
+                        {request.reviewComment ? (
+                          <p className="mt-1 max-w-56 text-[11px] text-ink-500">
+                            {request.reviewer ? `${request.reviewer.firstName}: ` : ""}
+                            {request.reviewComment}
+                          </p>
+                        ) : null}
+                        {request.remarks && !request.reviewComment ? (
+                          <p className="mt-1 max-w-56 text-[11px] text-ink-400">{request.remarks}</p>
+                        ) : null}
+                      </td>
+                      <td className="text-right">
+                        {request.status === "PENDING" && manager ? (
+                          <ReviewButtons requestId={request.id} />
+                        ) : request.status === "PENDING" && request.employeeId === user.id ? (
+                          <CancelButton requestId={request.id} />
+                        ) : request.status === "APPROVED" && (manager || request.employeeId === user.id) ? (
+                          <CancelButton requestId={request.id} />
+                        ) : (
+                          <span className="text-xs text-ink-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 ? (
+                <div className="flex items-center justify-between px-2 py-2 text-xs text-ink-600 border-t border-line">
+                  <span>
+                    Showing {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, totalRequests)} of {totalRequests}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {page > 1 ? (
+                      <Link
+                        href={`/time-off?tab=${activeTab}&view=${activeView}&page=${page - 1}${statusFilter ? `&status=${statusFilter.toLowerCase()}` : ""}`}
+                        className="btn-secondary btn-sm"
+                      >
+                        Previous
+                      </Link>
+                    ) : null}
+                    <span>
+                      Page {page} of {totalPages}
+                    </span>
+                    {page < totalPages ? (
+                      <Link
+                        href={`/time-off?tab=${activeTab}&view=${activeView}&page=${page + 1}${statusFilter ? `&status=${statusFilter.toLowerCase()}` : ""}`}
+                        className="btn-secondary btn-sm"
+                      >
+                        Next
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </>
       )}
+
+      {/* Public holiday calendar management (L10) */}
+      <HolidayManager
+        holidays={publicHolidays.map((h) => ({ id: h.id, name: h.name, date: h.date, isRecurring: h.isRecurring }))}
+        isHR={manager}
+      />
 
       <p className="hint">
         Approving a request writes the days onto the employee&apos;s attendance calendar and reduces their balance in the

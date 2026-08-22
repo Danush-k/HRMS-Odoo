@@ -24,13 +24,13 @@ import { db } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Attendance" };
 
-type Search = { view?: string; date?: string; month?: string; q?: string };
+type Search = { view?: string; date?: string; month?: string; week?: string; q?: string };
 
 export default async function AttendancePage({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
   const user = await requireUser();
   const manager = isManager(user.role);
-  const teamView = manager && params.view !== "me";
+  const currentView = params.view ?? (manager ? "day" : "me");
 
   return (
     <div className="flex flex-col gap-5">
@@ -38,36 +38,163 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
         <div>
           <h1 className="text-xl font-semibold text-ink-900">Attendance</h1>
           <p className="text-sm text-ink-500">
-            {teamView
-              ? "Everyone's check in and check out for the selected day."
-              : "Your day-by-day record for the selected month."}
+            {currentView === "week"
+              ? "Weekly team attendance matrix."
+              : currentView === "day"
+                ? "Daily check-in and check-out logs for all employees."
+                : "Your day-by-day attendance record."}
           </p>
         </div>
 
-        {manager ? (
-          <div className="flex rounded-md border border-line bg-surface p-0.5 text-sm">
-            <Link
-              href="/attendance"
-              className={`rounded px-3 py-1.5 font-medium transition ${
-                teamView ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
-              }`}
-            >
-              Everyone
-            </Link>
-            <Link
-              href="/attendance?view=me"
-              className={`rounded px-3 py-1.5 font-medium transition ${
-                !teamView ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
-              }`}
-            >
-              My attendance
-            </Link>
-          </div>
-        ) : null}
+        <div className="flex rounded-md border border-line bg-surface p-0.5 text-sm">
+          {manager ? (
+            <>
+              <Link
+                href="/attendance?view=day"
+                className={`rounded px-3 py-1.5 font-medium transition ${
+                  currentView === "day" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                }`}
+              >
+                Daily View
+              </Link>
+              <Link
+                href="/attendance?view=week"
+                className={`rounded px-3 py-1.5 font-medium transition ${
+                  currentView === "week" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                }`}
+              >
+                Weekly View
+              </Link>
+            </>
+          ) : null}
+          <Link
+            href="/attendance?view=me"
+            className={`rounded px-3 py-1.5 font-medium transition ${
+              currentView === "me" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+            }`}
+          >
+            My Attendance
+          </Link>
+        </div>
       </div>
 
-      {teamView ? <TeamDay params={params} companyId={user.companyId} /> : <MyMonth params={params} employeeId={user.id} />}
+      {currentView === "week" && manager ? (
+        <TeamWeek params={params} companyId={user.companyId} />
+      ) : currentView === "day" && manager ? (
+        <TeamDay params={params} companyId={user.companyId} />
+      ) : (
+        <MyMonth params={params} employeeId={user.id} />
+      )}
     </div>
+  );
+}
+
+async function TeamWeek({ params, companyId }: { params: Search; companyId: string }) {
+  const refDate = parseDay(params.week ?? params.date);
+  // Get Monday of current week
+  const dayOfWeek = refDate.getDay();
+  const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+  const monday = addDays(refDate, diffToMonday);
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  const sunday = weekDays[6]!;
+
+  const q = params.q?.trim();
+  const employees = await db.employee.findMany({
+    where: {
+      companyId,
+      status: "ACTIVE",
+      ...(q ? { OR: [{ firstName: { contains: q } }, { lastName: { contains: q } }, { loginId: { contains: q.toUpperCase() } }] } : {}),
+    },
+    orderBy: { firstName: "asc" },
+  });
+
+  const rows = await db.attendance.findMany({
+    where: {
+      employeeId: { in: employees.map((e) => e.id) },
+      date: { gte: monday, lte: sunday },
+    },
+  });
+
+  // Map employeeId -> isoDay -> attendance row
+  const matrix = new Map<string, Map<string, (typeof rows)[number]>>();
+  for (const row of rows) {
+    const key = isoDay(row.date);
+    if (!matrix.has(row.employeeId)) matrix.set(row.employeeId, new Map());
+    matrix.get(row.employeeId)!.set(key, row);
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Suspense fallback={<div className="h-9 w-48 rounded-md bg-ink-100" />}>
+          <PeriodNav value={isoDay(monday)} type="date" paramName="week" />
+        </Suspense>
+        <Suspense fallback={<div className="h-9 w-full max-w-sm rounded-md bg-ink-100" />}>
+          <SearchInput placeholder="Search employees" />
+        </Suspense>
+      </div>
+
+      <p className="text-xs text-ink-500 font-medium">
+        Week of {formatLongDate(monday)} — {formatLongDate(sunday)}
+      </p>
+
+      {employees.length === 0 ? (
+        <EmptyState title="No employees" description="Add employees before attendance can be recorded." />
+      ) : (
+        <div className="table-wrap overflow-x-auto">
+          <table className="grid-table min-w-full text-xs">
+            <thead>
+              <tr>
+                <th className="min-w-[160px]">Employee</th>
+                {weekDays.map((d) => (
+                  <th key={isoDay(d)} className="text-center">
+                    <span className="block font-semibold">{d.toLocaleDateString("en-US", { weekday: "short" })}</span>
+                    <span className="mono text-[10px] text-ink-400">{d.getDate()}</span>
+                  </th>
+                ))}
+                <th className="text-right">Total Hours</th>
+              </tr>
+            </thead>
+            <tbody>
+              {employees.map((employee) => {
+                const empMap = matrix.get(employee.id);
+                let totalMinutes = 0;
+
+                return (
+                  <tr key={employee.id}>
+                    <td>
+                      <Link href={`/employees/${employee.id}`} className="flex items-center gap-2 hover:text-brand-700">
+                        <Avatar src={employee.avatar} name={`${employee.firstName} ${employee.lastName}`} size={24} />
+                        <span className="truncate font-medium">{employee.firstName} {employee.lastName}</span>
+                      </Link>
+                    </td>
+                    {weekDays.map((d) => {
+                      const row = empMap?.get(isoDay(d));
+                      if (row) totalMinutes += row.workedMinutes;
+                      return (
+                        <td key={isoDay(d)} className="text-center py-2">
+                          {row ? (
+                            <div className="flex flex-col items-center">
+                              <AttendanceChip status={row.status} />
+                              <span className="mono text-[10px] text-ink-500 mt-0.5">
+                                {formatDuration(row.workedMinutes)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-ink-300">—</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="mono text-right font-semibold">{formatDuration(totalMinutes)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
   );
 }
 

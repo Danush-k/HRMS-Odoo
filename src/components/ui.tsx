@@ -165,7 +165,18 @@ export function StatusDot({ status }: { status: string }) {
     );
   }
 
-  const present = status === "PRESENT" || status === "HALF_DAY";
+  if (status === "HALF_DAY") {
+    return (
+      <span
+        title="Half day in office"
+        className="inline-block h-2.5 w-2.5 rounded-full bg-amber-500 ring-1 ring-amber-300"
+      >
+        <span className="sr-only">Half day</span>
+      </span>
+    );
+  }
+
+  const present = status === "PRESENT";
   return (
     <span
       title={present ? "In the office" : "Absent"}
