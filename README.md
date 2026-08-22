@@ -20,6 +20,32 @@ profiles, attendance, time off and salary structures.
 
 ## Getting started
 
+One command, from a fresh clone:
+
+```bash
+./run-mac.sh        # macOS
+./run.sh            # Linux, WSL, Git Bash on Windows
+```
+
+The script checks your Node version, writes a `.env` with a fresh `SESSION_SECRET`,
+installs dependencies, creates and seeds the database, then starts the development
+server on http://localhost:3000. Re-running it is cheap: it skips whatever is already
+done and keeps your data.
+
+| Argument | What it does |
+| --- | --- |
+| *(none)* | Set up if needed, then start the development server |
+| `setup` | Prepare everything, then stop |
+| `reset` | Wipe the database and reseed the demo company |
+| `build` | Production build |
+| `start` | Production server |
+| `studio` | Browse the data in Prisma Studio *(macOS script)* |
+| `clean` | Remove `node_modules`, `.next` and the database |
+
+Use another port with `PORT=3001 ./run.sh`.
+
+Or do it by hand:
+
 ```bash
 npm install
 cp .env.example .env          # then set SESSION_SECRET
