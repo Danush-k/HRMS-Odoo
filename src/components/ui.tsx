@@ -122,43 +122,55 @@ export function Textarea({
   );
 }
 
-export function FormMessage({ state }: { state: ActionState }) {
-  if (!state.message && !state.notice) return null;
+export function FormMessage({ state }: { state: ActionState | null | undefined }) {
+  if (!state?.message && !state?.notice) return null;
 
-  const tone = state.ok
+  const tone = state?.ok
     ? "border-present/30 bg-present-soft text-present"
-    : "border-danger/25 bg-danger-soft text-danger";
+    : "border-danger/30 bg-danger-soft text-danger";
 
   return (
-    <div className={`rounded-md border px-3 py-2 text-sm font-medium ${tone}`} role="status">
+    <div className={`rounded-xl border px-4 py-3 text-sm font-medium shadow-2xs ${tone}`} role="status">
       {state.message}
       {state.notice ? <p className="mt-1 font-mono text-xs font-normal break-all">{state.notice}</p> : null}
     </div>
   );
 }
 
+export const FormNotice = FormMessage;
+
 const ATTENDANCE_TONE: Record<AttendanceStatus, string> = {
-  PRESENT: "bg-present-soft text-present",
-  ABSENT: "bg-absent-soft text-absent",
-  HALF_DAY: "bg-brand-100 text-brand-700",
-  LEAVE: "bg-leave-soft text-leave",
+  PRESENT: "border-present/30 bg-present-soft text-present",
+  ABSENT: "border-absent/30 bg-absent-soft text-absent",
+  HALF_DAY: "border-brand-300 bg-brand-50 text-brand-700",
+  LEAVE: "border-leave/30 bg-leave-soft text-leave",
 };
 
 export function AttendanceChip({ status }: { status: string }) {
   const key = (status in ATTENDANCE_TONE ? status : "ABSENT") as AttendanceStatus;
-  return <span className={`chip ${ATTENDANCE_TONE[key]}`}>{ATTENDANCE_LABEL[key]}</span>;
+  return (
+    <span className={`chip border shadow-2xs ${ATTENDANCE_TONE[key]}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-currentColor opacity-80" />
+      <span>{ATTENDANCE_LABEL[key]}</span>
+    </span>
+  );
 }
 
 const LEAVE_TONE: Record<LeaveStatus, string> = {
-  PENDING: "bg-absent-soft text-absent",
-  APPROVED: "bg-present-soft text-present",
-  REJECTED: "bg-danger-soft text-danger",
-  CANCELLED: "bg-ink-100 text-ink-500",
+  PENDING: "border-absent/30 bg-absent-soft text-absent",
+  APPROVED: "border-present/30 bg-present-soft text-present",
+  REJECTED: "border-danger/30 bg-danger-soft text-danger",
+  CANCELLED: "border-line bg-ink-100/60 text-ink-500",
 };
 
 export function LeaveChip({ status }: { status: string }) {
   const key = (status in LEAVE_TONE ? status : "PENDING") as LeaveStatus;
-  return <span className={`chip ${LEAVE_TONE[key]}`}>{key.charAt(0) + key.slice(1).toLowerCase()}</span>;
+  return (
+    <span className={`chip border shadow-2xs ${LEAVE_TONE[key]}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-currentColor opacity-80" />
+      <span>{key.charAt(0) + key.slice(1).toLowerCase()}</span>
+    </span>
+  );
 }
 
 /** Green present, blue on leave, amber absent — the indicator from the wireframes. */
@@ -239,10 +251,10 @@ export function Avatar({
 
 export function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
   return (
-    <div className="card flex flex-col items-center gap-2 px-6 py-14 text-center">
-      <p className="text-sm font-semibold text-ink-800">{title}</p>
-      <p className="max-w-sm text-sm text-ink-500">{description}</p>
-      {action ? <div className="mt-2">{action}</div> : null}
+    <div className="rounded-2xl border border-line bg-surface p-10 text-center shadow-2xs">
+      <h3 className="text-base font-bold text-ink-900">{title}</h3>
+      <p className="mx-auto mt-1.5 max-w-md text-xs text-ink-500 leading-relaxed">{description}</p>
+      {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );
 }

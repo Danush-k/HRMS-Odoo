@@ -52,21 +52,25 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
           </div>
         </div>
 
-        <div className="flex rounded-md border border-line bg-surface p-0.5 text-sm">
+        <div className="flex rounded-xl border border-line bg-surface p-1 text-xs shadow-2xs">
           {manager ? (
             <>
               <Link
                 href="/attendance?view=day"
-                className={`rounded px-3 py-1.5 font-medium transition ${
-                  currentView === "day" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                className={`rounded-lg px-3.5 py-1.5 font-semibold transition ${
+                  currentView === "day"
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "text-ink-600 hover:bg-brand-50/60 hover:text-brand-700"
                 }`}
               >
                 Daily View
               </Link>
               <Link
                 href="/attendance?view=week"
-                className={`rounded px-3 py-1.5 font-medium transition ${
-                  currentView === "week" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                className={`rounded-lg px-3.5 py-1.5 font-semibold transition ${
+                  currentView === "week"
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "text-ink-600 hover:bg-brand-50/60 hover:text-brand-700"
                 }`}
               >
                 Weekly View
@@ -75,8 +79,10 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
           ) : null}
           <Link
             href="/attendance?view=me"
-            className={`rounded px-3 py-1.5 font-medium transition ${
-              currentView === "me" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+            className={`rounded-lg px-3.5 py-1.5 font-semibold transition ${
+              currentView === "me"
+                ? "bg-brand-600 text-white shadow-2xs"
+                : "text-ink-600 hover:bg-brand-50/60 hover:text-brand-700"
             }`}
           >
             My Attendance

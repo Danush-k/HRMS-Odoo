@@ -126,19 +126,23 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
         <div className="flex items-center gap-3">
           {/* Admin / HR Tab Navigation: Time Off vs Allocation */}
           {manager ? (
-            <div className="flex rounded-md border border-line bg-surface p-0.5 text-sm">
+            <div className="flex rounded-xl border border-line bg-surface p-1 text-xs shadow-2xs">
               <Link
                 href={`/time-off?tab=timeoff&view=${activeView}`}
-                className={`rounded px-3 py-1.5 font-medium transition ${
-                  activeTab === "timeoff" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                className={`rounded-lg px-3.5 py-1.5 font-semibold transition ${
+                  activeTab === "timeoff"
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "text-ink-600 hover:bg-brand-50/60 hover:text-brand-700"
                 }`}
               >
                 Time Off
               </Link>
               <Link
                 href="/time-off?tab=allocation"
-                className={`rounded px-3 py-1.5 font-medium transition ${
-                  activeTab === "allocation" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                className={`rounded-lg px-3.5 py-1.5 font-semibold transition ${
+                  activeTab === "allocation"
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "text-ink-600 hover:bg-brand-50/60 hover:text-brand-700"
                 }`}
               >
                 Allocation
@@ -148,19 +152,23 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
 
           {/* View Toggle: Table View vs Calendar View */}
           {activeTab === "timeoff" ? (
-            <div className="flex rounded-md border border-line bg-surface p-0.5 text-sm">
+            <div className="flex rounded-xl border border-line bg-surface p-1 text-xs shadow-2xs">
               <Link
                 href={`/time-off?tab=timeoff&view=table${statusFilter ? `&status=${statusFilter.toLowerCase()}` : ""}`}
-                className={`rounded px-3 py-1.5 font-medium transition ${
-                  activeView === "table" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                className={`rounded-lg px-3.5 py-1.5 font-semibold transition ${
+                  activeView === "table"
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "text-ink-600 hover:bg-brand-50/60 hover:text-brand-700"
                 }`}
               >
                 Table View
               </Link>
               <Link
                 href={`/time-off?tab=timeoff&view=calendar${statusFilter ? `&status=${statusFilter.toLowerCase()}` : ""}`}
-                className={`rounded px-3 py-1.5 font-medium transition ${
-                  activeView === "calendar" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+                className={`rounded-lg px-3.5 py-1.5 font-semibold transition ${
+                  activeView === "calendar"
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "text-ink-600 hover:bg-brand-50/60 hover:text-brand-700"
                 }`}
               >
                 Calendar View
