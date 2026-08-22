@@ -11,6 +11,7 @@ import { dayKey } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { signOutAction } from "@/server/actions/auth";
 import { ReviewButtons } from "@/app/(app)/time-off/review-buttons";
+import { EmployeeActionMenu } from "./employee-action-menu";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -800,15 +801,7 @@ export default async function EmployeesPage({
                         </span>
                       </td>
                       <td className="text-right">
-                        <Link
-                          href={`/employees/${emp.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800 hover:underline"
-                        >
-                          View Profile
-                          <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
-                            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                          </svg>
-                        </Link>
+                        <EmployeeActionMenu employeeId={emp.id} />
                       </td>
                     </tr>
                   );

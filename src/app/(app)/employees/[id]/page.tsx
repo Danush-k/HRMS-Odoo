@@ -16,6 +16,7 @@ import { ResumeForm } from "./resume-form";
 import { ResetPasswordPanel } from "./reset-password-panel";
 import { SalaryForm } from "./salary-form";
 import { SalaryHistory } from "./salary-history";
+import { DownloadProfilePdfButton } from "./download-profile-button";
 
 export const metadata: Metadata = { title: "Employee" };
 
@@ -320,24 +321,45 @@ export default async function EmployeeProfilePage({
           </div>
         </div>
 
-        <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-          <div>
-            <dt className="label">Login ID</dt>
-            <dd className="mono font-semibold text-brand-700">{employee.loginId}</dd>
-          </div>
-          <div>
-            <dt className="label">Joined</dt>
-            <dd className="num text-ink-800">{formatDate(employee.dateOfJoining)}</dd>
-          </div>
-          {employee.role === "EMPLOYEE" ? (
+        <div className="flex flex-wrap items-center gap-6">
+          <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
             <div>
-              <dt className="label">Manager</dt>
-              <dd className="text-ink-800">
-                {employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : "—"}
-              </dd>
+              <dt className="label">Login ID</dt>
+              <dd className="mono font-semibold text-brand-700">{employee.loginId}</dd>
             </div>
-          ) : null}
-        </dl>
+            <div>
+              <dt className="label">Joined</dt>
+              <dd className="num text-ink-800">{formatDate(employee.dateOfJoining)}</dd>
+            </div>
+            {employee.role === "EMPLOYEE" ? (
+              <div>
+                <dt className="label">Manager</dt>
+                <dd className="text-ink-800">
+                  {employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : "—"}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+
+          <DownloadProfilePdfButton
+            data={{
+              name: `${employee.firstName} ${employee.lastName}`,
+              loginId: employee.loginId,
+              role: ROLE_LABEL[employee.role as Role],
+              email: employee.email,
+              mobile: text(employee.mobile),
+              department: text(employee.department),
+              jobPosition: text(employee.jobPosition),
+              location: text(employee.location),
+              companyName: employee.company.name,
+              dateOfJoining: formatDate(employee.dateOfJoining),
+              managerName: employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : undefined,
+              about: text(employee.about),
+              skills: text(employee.skills),
+              certifications: text(employee.certifications),
+            }}
+          />
+        </div>
       </div>
 
       <DetailsForm

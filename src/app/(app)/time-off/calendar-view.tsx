@@ -68,13 +68,27 @@ export function TimeOffCalendarView({
   return (
     <div className="card p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-ink-900">{monthTitle}</h3>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={prevMonth} className="btn-secondary btn-sm">
-            ← Previous
+        <div className="inline-flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-xs">
+          <button
+            type="button"
+            onClick={prevMonth}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-600 transition hover:bg-brand-50 hover:text-brand-700 active:scale-95"
+            aria-label="Previous month"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
-          <button type="button" onClick={nextMonth} className="btn-secondary btn-sm">
-            Next →
+          <span className="px-3 text-sm font-bold text-ink-900 min-w-36 text-center">{monthTitle}</span>
+          <button
+            type="button"
+            onClick={nextMonth}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-600 transition hover:bg-brand-50 hover:text-brand-700 active:scale-95"
+            aria-label="Next month"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
       </div>

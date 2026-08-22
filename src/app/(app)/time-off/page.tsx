@@ -181,6 +181,10 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
             employees={colleagues.map((c) => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }))}
             leaveTypes={leaveTypes.map((t) => ({ id: t.id, name: t.name }))}
           />
+          <HolidayManager
+            holidays={publicHolidays.map((h) => ({ id: h.id, name: h.name, date: h.date, isRecurring: h.isRecurring }))}
+            isHR={manager}
+          />
         </div>
       ) : (
         <>
@@ -359,12 +363,6 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
           )}
         </>
       )}
-
-      {/* Public holiday calendar management (L10) */}
-      <HolidayManager
-        holidays={publicHolidays.map((h) => ({ id: h.id, name: h.name, date: h.date, isRecurring: h.isRecurring }))}
-        isHR={manager}
-      />
 
       <p className="hint">
         Approving a request writes the days onto the employee&apos;s attendance calendar and reduces their balance in the

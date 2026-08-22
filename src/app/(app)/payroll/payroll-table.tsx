@@ -78,18 +78,23 @@ export function PayrollTable({
   const [sortBy, setSortBy] = useState<SortOption>("NAME_ASC");
   const [editingEmployee, setEditingEmployee] = useState<PayrollEmployee | null>(null);
   const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
 
   const [isGenerating, startGenerating] = useTransition();
   const [actionFeedback, setActionFeedback] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [generatingSingleId, setGeneratingSingleId] = useState<string | null>(null);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close search suggestions when clicking outside
+  // Close search suggestions and action menu when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setIsSearchFocused(false);
+      }
+      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
+        setOpenActionMenuId(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -370,7 +375,7 @@ export function PayrollTable({
 
                           <div className="flex items-center gap-1.5 shrink-0">
                             {p ? (
-                              <span className="mono text-xs font-semibold text-present">
+                              <span className="mono text-xs font-semibold text-ink-900">
                                 {formatCurrency(p.netPay)}
                               </span>
                             ) : (
@@ -606,67 +611,105 @@ export function PayrollTable({
                                     <span className="mono font-medium text-ink-900">{formatCurrency(c.amount)}</span>
                                   </li>
                                 ))}
-                                <li className="flex justify-between border-t border-line/60 pt-1 text-danger">
+                                <li className="flex justify-between border-t border-line/60 pt-1 text-ink-700">
                                   <span>PF Employee:</span>
-                                  <span className="mono font-medium">− {formatCurrency(breakdown.pfEmployee)}</span>
+                                  <span className="mono font-medium text-ink-900">{formatCurrency(breakdown.pfEmployee)}</span>
                                 </li>
-                                <li className="flex justify-between text-danger">
+                                <li className="flex justify-between text-ink-700">
                                   <span>Prof. Tax:</span>
-                                  <span className="mono font-medium">− {formatCurrency(breakdown.professionalTax)}</span>
+                                  <span className="mono font-medium text-ink-900">{formatCurrency(breakdown.professionalTax)}</span>
                                 </li>
                               </ul>
                             </div>
                           ) : null}
                         </td>
 
-                        <td className="mono text-danger font-medium">
-                          − {formatCurrency(payslip.totalDeductions)}
+                        <td className="mono text-ink-900 font-medium">
+                          {formatCurrency(payslip.totalDeductions)}
                         </td>
 
-                        <td className="mono font-bold text-present">
+                        <td className="mono font-bold text-ink-900">
                           {formatCurrency(payslip.netPay)}
                         </td>
 
-                        <td className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {/* Regenerate single payslip */}
+                        <td className="text-right relative">
+                          <div className="relative inline-block text-left" ref={openActionMenuId === employee.id ? actionMenuRef : undefined}>
                             <button
                               type="button"
-                              onClick={() => handleGenerateSingle(employee.id, `${employee.firstName} ${employee.lastName}`)}
-                              disabled={isThisGenerating || isGenerating}
-                              className="btn-ghost btn-sm text-xs font-semibold text-ink-600 hover:text-brand-700 rounded-lg p-1.5"
-                              title="Regenerate this employee's payslip"
+                              onClick={() => setOpenActionMenuId(openActionMenuId === employee.id ? null : employee.id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-600 transition hover:bg-brand-50 hover:text-brand-700 active:scale-95"
+                              title="Actions"
+                              aria-label="Actions"
                             >
-                              {isThisGenerating ? (
-                                <svg className="animate-spin h-3.5 w-3.5 text-brand-600" viewBox="0 0 24 24" fill="none">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                                </svg>
-                              ) : (
-                                <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
-                                  <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.451a.75.75 0 000-1.5H4.5a.75.75 0 00-.75.75v3.75a.75.75 0 001.5 0v-2.146l.462.462a7 7 0 0011.712-3.138.75.75 0 00-1.412-.493zM4.688 8.576a5.5 5.5 0 019.201-2.466l.312.311h-2.451a.75.75 0 000 1.5h3.75a.75.75 0 00.75-.75V3.42a.75.75 0 00-1.5 0v2.146l-.462-.462a7 7 0 00-11.712 3.138.75.75 0 001.412.493z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </button>
-
-                            <Link
-                              href={`/payroll/${payslip.id}`}
-                              className="btn-ghost btn-sm text-xs font-semibold text-brand-600 hover:bg-brand-50 rounded-lg"
-                            >
-                              View
-                            </Link>
-
-                            <button
-                              type="button"
-                              onClick={() => setEditingEmployee(employee)}
-                              className="btn-secondary btn-sm inline-flex items-center gap-1 text-xs rounded-lg shadow-xs"
-                              title="Edit salary structure in place"
-                            >
-                              <svg viewBox="0 0 20 20" width="13" height="13" fill="currentColor">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                               </svg>
-                              <span>Edit Structure</span>
                             </button>
+
+                            {openActionMenuId === employee.id ? (
+                              <div className="absolute right-0 z-40 mt-1 w-48 rounded-xl border border-line bg-surface p-1 shadow-xl animate-in fade-in zoom-in-95 duration-100 text-left">
+                                <Link
+                                  href={`/payroll/${payslip.id}`}
+                                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-ink-800 hover:bg-brand-50 hover:text-brand-700 transition"
+                                  onClick={() => setOpenActionMenuId(null)}
+                                >
+                                  <svg className="h-4 w-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  <span>View Payslip</span>
+                                </Link>
+
+                                <Link
+                                  href={`/payroll/${payslip.id}?download=true`}
+                                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-ink-800 hover:bg-brand-50 hover:text-brand-700 transition"
+                                  onClick={() => setOpenActionMenuId(null)}
+                                >
+                                  <svg className="h-4 w-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  <span>Download Payslip PDF</span>
+                                </Link>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    handleGenerateSingle(employee.id, `${employee.firstName} ${employee.lastName}`);
+                                  }}
+                                  disabled={isThisGenerating || isGenerating}
+                                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-ink-800 hover:bg-brand-50 hover:text-brand-700 transition disabled:opacity-50"
+                                >
+                                  {isThisGenerating ? (
+                                    <svg className="animate-spin h-4 w-4 text-brand-600" viewBox="0 0 24 24" fill="none">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="h-4 w-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                  )}
+                                  <span>Regenerate Payslip</span>
+                                </button>
+
+                                <div className="my-1 border-t border-line" />
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    setEditingEmployee(employee);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-ink-800 hover:bg-brand-50 hover:text-brand-700 transition"
+                                >
+                                  <svg className="h-4 w-4 text-ink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                  <span>Edit Salary Structure</span>
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                         </td>
                       </>
@@ -675,42 +718,61 @@ export function PayrollTable({
                         <td colSpan={4} className="text-xs text-ink-400 italic">
                           Payslip not generated yet for this period
                         </td>
-                        <td className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {/* Run single payslip directly */}
+                        <td className="text-right relative">
+                          <div className="relative inline-block text-left" ref={openActionMenuId === employee.id ? actionMenuRef : undefined}>
                             <button
                               type="button"
-                              onClick={() => handleGenerateSingle(employee.id, `${employee.firstName} ${employee.lastName}`)}
-                              disabled={isThisGenerating || isGenerating}
-                              className="btn-approve btn-sm inline-flex items-center gap-1 text-xs rounded-lg shadow-xs"
-                              title="Generate payslip for this employee only"
+                              onClick={() => setOpenActionMenuId(openActionMenuId === employee.id ? null : employee.id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-600 transition hover:bg-brand-50 hover:text-brand-700 active:scale-95"
+                              title="Actions"
+                              aria-label="Actions"
                             >
-                              {isThisGenerating ? (
-                                <>
-                                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                                  </svg>
-                                  <span>Generating…</span>
-                                </>
-                              ) : (
-                                <>
-                                  <span>⚡</span>
-                                  <span>Generate</span>
-                                </>
-                              )}
+                              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                              </svg>
                             </button>
 
-                            <button
-                              type="button"
-                              onClick={() => setEditingEmployee(employee)}
-                              className="btn-secondary btn-sm inline-flex items-center gap-1.5 text-xs rounded-lg shadow-xs"
-                            >
-                              <svg viewBox="0 0 20 20" width="13" height="13" fill="currentColor">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                              </svg>
-                              <span>Edit Structure</span>
-                            </button>
+                            {openActionMenuId === employee.id ? (
+                              <div className="absolute right-0 z-40 mt-1 w-48 rounded-xl border border-line bg-surface p-1 shadow-xl animate-in fade-in zoom-in-95 duration-100 text-left">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    handleGenerateSingle(employee.id, `${employee.firstName} ${employee.lastName}`);
+                                  }}
+                                  disabled={isThisGenerating || isGenerating}
+                                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50 transition disabled:opacity-50"
+                                >
+                                  {isThisGenerating ? (
+                                    <svg className="animate-spin h-4 w-4 text-brand-600" viewBox="0 0 24 24" fill="none">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="h-4 w-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                  )}
+                                  <span>Generate Payslip</span>
+                                </button>
+
+                                <div className="my-1 border-t border-line" />
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    setEditingEmployee(employee);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-ink-800 hover:bg-brand-50 hover:text-brand-700 transition"
+                                >
+                                  <svg className="h-4 w-4 text-ink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                  <span>Edit Salary Structure</span>
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                         </td>
                       </>

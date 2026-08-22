@@ -7,9 +7,20 @@ import { isManager, requireUser } from "@/lib/auth";
 import { format } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { formatCurrency, type SalaryComponent } from "@/lib/salary";
-export default async function PayslipPage({ params }: { params: Promise<{ id: string }> }) {
+import { BackToPayrollButton, DownloadPayslipPdfButton } from "./payslip-pdf-button";
+
+export default async function PayslipPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ download?: string }>;
+}) {
   const { id } = await params;
+  const sParams = await searchParams;
+  const shouldAutoDownload = sParams.download === "true";
   const viewer = await requireUser();
+  const company = viewer.company;
 
   const payslip = await db.payslip.findFirst({
     where: { id, employee: { companyId: viewer.companyId } },
@@ -22,6 +33,7 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
           loginId: true,
           avatar: true,
           jobPosition: true,
+          department: true,
         },
       },
       generatedBy: { select: { firstName: true, lastName: true } },
@@ -29,25 +41,53 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
   });
 
   if (!payslip) notFound();
-  // Same boundary as the salary it was generated from: the employee themselves, or a manager.
   if (payslip.employeeId !== viewer.id && !isManager(viewer.role)) notFound();
 
   const components: SalaryComponent[] = JSON.parse(payslip.componentsJson);
   const period = format(new Date(payslip.periodYear, payslip.periodMonth - 1, 1), "MMMM yyyy");
 
+  const pdfData = {
+    companyName: company.name,
+    companyLogo: company.logo,
+    employeeName: `${payslip.employee.firstName} ${payslip.employee.lastName}`,
+    employeeLoginId: payslip.employee.loginId,
+    jobPosition: payslip.employee.jobPosition,
+    department: payslip.employee.department,
+    period,
+    payableDays: payslip.payableDays,
+    totalWorkingDays: payslip.totalWorkingDays,
+    generatedDate: format(payslip.generatedAt, "d MMM yyyy"),
+    generatedByName: `${payslip.generatedBy.firstName} ${payslip.generatedBy.lastName}`,
+    components: components.map((c) => ({ label: c.label, amount: c.amount })),
+    grossMonthly: payslip.grossMonthly,
+    pfEmployee: payslip.pfEmployee,
+    professionalTax: payslip.professionalTax,
+    totalDeductions: payslip.totalDeductions,
+    netPay: payslip.netPay,
+  };
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-5">
       <div className="flex items-center justify-between">
-        <Link href="/payroll" className="text-sm font-medium text-brand-600 hover:underline">
-          ← Back to Payroll
-        </Link>
+        <BackToPayrollButton />
+        <DownloadPayslipPdfButton data={pdfData} autoDownload={shouldAutoDownload} />
       </div>
 
       <div className="card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 bg-brand-700 px-6 py-4 text-white">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-white/70">Payslip</p>
-            <p className="text-lg font-semibold">{period}</p>
+          <div className="flex items-center gap-3">
+            {company.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={company.logo} alt="" className="h-8 w-8 rounded bg-white p-0.5 object-cover" />
+            ) : (
+              <span className="grid h-8 w-8 place-items-center rounded bg-white/20 text-sm font-bold">
+                {company.name.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <div>
+              <p className="text-sm font-semibold">{company.name}</p>
+              <p className="text-[11px] font-medium text-white/80">Payslip — {period}</p>
+            </div>
           </div>
           <Link
             href={`/employees/${payslip.employee.id}`}
@@ -93,15 +133,15 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
           <ul className="mt-3 flex flex-col divide-y divide-line">
             <li className="flex items-center justify-between py-2.5 text-sm">
               <span className="text-ink-700">Provident Fund (employee)</span>
-              <span className="mono font-medium text-danger">− {formatCurrency(payslip.pfEmployee)}</span>
+              <span className="mono font-medium text-ink-900">{formatCurrency(payslip.pfEmployee)}</span>
             </li>
             <li className="flex items-center justify-between py-2.5 text-sm">
               <span className="text-ink-700">Professional Tax</span>
-              <span className="mono font-medium text-danger">− {formatCurrency(payslip.professionalTax)}</span>
+              <span className="mono font-medium text-ink-900">{formatCurrency(payslip.professionalTax)}</span>
             </li>
             <li className="flex items-center justify-between py-2.5 text-sm font-semibold">
               <span className="text-ink-900">Total deductions</span>
-              <span className="mono text-danger">− {formatCurrency(payslip.totalDeductions)}</span>
+              <span className="mono text-ink-900">{formatCurrency(payslip.totalDeductions)}</span>
             </li>
           </ul>
         </div>
@@ -113,7 +153,7 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
               Prorated for {payslip.payableDays} of {payslip.totalWorkingDays} working days.
             </p>
           </div>
-          <p className="mono text-xl font-bold text-present">{formatCurrency(payslip.netPay)}</p>
+          <p className="mono text-xl font-bold text-ink-900">{formatCurrency(payslip.netPay)}</p>
         </div>
       </div>
     </div>
