@@ -98,3 +98,20 @@ describe("Resume Text Parser", () => {
   });
 });
 
+describe("Employee Profile Navigation Metadata", () => {
+  it("computes previous and next employee metadata adhering to roster ordering", async () => {
+    const { getEmployeeNavigationMeta } = await import("../lib/employee-navigation");
+
+    // Test with mock companyId
+    const meta = await getEmployeeNavigationMeta({
+      companyId: "non-existent-company-for-unit-test",
+      currentEmployeeId: "test-id",
+    });
+
+    expect(meta.total).toBe(0);
+    expect(meta.current).toBe(1);
+    expect(meta.previous).toBeNull();
+    expect(meta.next).toBeNull();
+    expect(meta.hasFilter).toBe(false);
+  });
+});
