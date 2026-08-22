@@ -47,6 +47,15 @@ export function canViewSalary(viewer: { id: string; role: Role }, targetId: stri
   return isManager(viewer.role) || viewer.id === targetId;
 }
 
+/**
+ * Private info (bank details, date of birth, PAN, UAN, residing address, etc.)
+ * is visible to managers for anyone, and to an employee for themselves only.
+ * No unauthorized employee ever sees a colleague's private details.
+ */
+export function canViewPrivateInfo(viewer: { id: string; role: Role }, targetId: string) {
+  return isManager(viewer.role) || viewer.id === targetId;
+}
+
 /** Only managers may change a salary structure (SRS 3.6.2). */
 export function canEditSalary(viewerRole: Role) {
   return isManager(viewerRole);

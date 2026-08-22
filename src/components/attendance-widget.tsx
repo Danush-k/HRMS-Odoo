@@ -23,7 +23,7 @@ export function AttendanceWidget({
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [timer, setTimer] = useState(() => (checkedInSince ? elapsed(checkedInSince) : "00:00:00"));
+  const [timer, setTimer] = useState("00:00:00");
 
   useEffect(() => {
     if (!checkedInSince) return;

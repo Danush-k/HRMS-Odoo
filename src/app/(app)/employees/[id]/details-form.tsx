@@ -38,6 +38,7 @@ export function DetailsForm({
 }) {
   const [state, action] = useActionState(updateProfileAction, idle);
   const locked = !canEdit;
+  const isEmployee = values.role === "EMPLOYEE";
 
   return (
     <form action={action} className="card p-5 sm:p-6">
@@ -52,6 +53,7 @@ export function DetailsForm({
               initial={values.avatar}
               fallbackName={`${values.firstName} ${values.lastName}`}
               size={96}
+              employeeId={values.id}
             />
           ) : null}
         </div>
@@ -93,25 +95,49 @@ export function DetailsForm({
               <Input name="department" defaultValue={values.department} disabled={!isManager} />
             </Field>
 
-            <Field label="Manager" name="managerId" error={state.errors?.managerId}>
-              <Select name="managerId" defaultValue={values.managerId} disabled={!isManager}>
-                <option value="">No manager</option>
-                {colleagues.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {person.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+            {isEmployee ? (
+              <>
+                <Field label="Manager" name="managerId" error={state.errors?.managerId}>
+                  <Select name="managerId" defaultValue={values.managerId} disabled={!isManager}>
+                    <option value="">No manager</option>
+                    {colleagues.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
 
-            <Field label="Location" name="location" error={state.errors?.location}>
-              <Input name="location" defaultValue={values.location} disabled={!isManager} />
-            </Field>
+                <Field label="Location" name="location" error={state.errors?.location}>
+                  <Input name="location" defaultValue={values.location} disabled={!isManager} />
+                </Field>
 
-            {isManager ? (
-              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Role" name="role" error={state.errors?.role}>
+                    <Select name="role" defaultValue={values.role} disabled={!isManager}>
+                      {ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {ROLE_LABEL[role]}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Status" name="status" error={state.errors?.status}>
+                    <Select name="status" defaultValue={values.status} disabled={!isManager}>
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                    </Select>
+                  </Field>
+                </div>
+              </>
+            ) : (
+              <>
+                <Field label="Location" name="location" error={state.errors?.location}>
+                  <Input name="location" defaultValue={values.location} disabled={!isManager} />
+                </Field>
+
                 <Field label="Role" name="role" error={state.errors?.role}>
-                  <Select name="role" defaultValue={values.role}>
+                  <Select name="role" defaultValue={values.role} disabled={!isManager}>
                     {ROLES.map((role) => (
                       <option key={role} value={role}>
                         {ROLE_LABEL[role]}
@@ -119,14 +145,15 @@ export function DetailsForm({
                     ))}
                   </Select>
                 </Field>
+
                 <Field label="Status" name="status" error={state.errors?.status}>
-                  <Select name="status" defaultValue={values.status}>
+                  <Select name="status" defaultValue={values.status} disabled={!isManager}>
                     <option value="ACTIVE">Active</option>
                     <option value="INACTIVE">Inactive</option>
                   </Select>
                 </Field>
-              </div>
-            ) : null}
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { Tabs } from "@/components/tabs";
 import { Avatar, LeaveChip } from "@/components/ui";
-import { canEditEmployee, canEditSalary, canViewSalary, isManager, requireUser } from "@/lib/auth";
+import { canEditEmployee, canEditSalary, canViewPrivateInfo, canViewSalary, isManager, requireUser } from "@/lib/auth";
 import { ROLE_LABEL, type Role } from "@/lib/constants";
 import { formatDate, inputDate } from "@/lib/dates";
 import { db } from "@/lib/db";
@@ -22,17 +22,70 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
   const { id } = await params;
   const viewer = await requireUser();
 
+  const isSelf = viewer.id === id;
+  const managerView = isManager(viewer.role);
+  const canEdit = canEditEmployee(viewer, id);
+  const showSalary = canViewSalary(viewer, id);
+  const showPrivate = canViewPrivateInfo(viewer, id);
+
   const employee = await db.employee.findFirst({
     where: { id, companyId: viewer.companyId },
-    include: { salary: true, manager: true, company: true },
+    select: {
+      id: true,
+      companyId: true,
+      loginId: true,
+      email: true,
+      role: true,
+      status: true,
+      firstName: true,
+      lastName: true,
+      jobPosition: true,
+      department: true,
+      location: true,
+      mobile: true,
+      avatar: true,
+      managerId: true,
+      dateOfJoining: true,
+      about: true,
+      loveAboutJob: true,
+      interests: true,
+      skills: true,
+      certifications: true,
+      company: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      },
+      manager: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+      ...(showSalary ? { salary: true } : {}),
+      ...(showPrivate
+        ? {
+            dateOfBirth: true,
+            residingAddress: true,
+            nationality: true,
+            personalEmail: true,
+            gender: true,
+            maritalStatus: true,
+            accountNumber: true,
+            bankName: true,
+            ifscCode: true,
+            panNo: true,
+            uanNo: true,
+            empCode: true,
+          }
+        : {}),
+    },
   });
 
   if (!employee) notFound();
-
-  const isSelf = viewer.id === employee.id;
-  const managerView = isManager(viewer.role);
-  const canEdit = canEditEmployee(viewer, employee.id);
-  const showSalary = canViewSalary(viewer, employee.id);
 
   const colleagues = managerView
     ? await db.employee.findMany({
@@ -49,7 +102,18 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
     take: 4,
   });
 
-  const salary = employee.salary;
+  const salary = "salary" in employee ? (employee.salary as {
+    monthlyWage: number;
+    workingDaysPerWeek: number;
+    breakHours: number;
+    basicPercent: number;
+    hraPercentOfBasic: number;
+    standardAllowancePercent: number;
+    performanceBonusPercent: number;
+    ltaPercent: number;
+    pfPercent: number;
+    professionalTax: number;
+  } | null) : null;
 
   const tabs = [
     {
@@ -69,7 +133,25 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
         />
       ),
     },
-    {
+  ];
+
+  if (showPrivate) {
+    const priv = employee as typeof employee & {
+      dateOfBirth?: Date | null;
+      residingAddress?: string | null;
+      nationality?: string | null;
+      personalEmail?: string | null;
+      gender?: string | null;
+      maritalStatus?: string | null;
+      accountNumber?: string | null;
+      bankName?: string | null;
+      ifscCode?: string | null;
+      panNo?: string | null;
+      uanNo?: string | null;
+      empCode?: string | null;
+    };
+
+    tabs.push({
       id: "private",
       label: "Private Info",
       content: (
@@ -78,24 +160,24 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
           canEdit={canEdit}
           isManager={managerView}
           values={{
-            dateOfBirth: inputDate(employee.dateOfBirth),
-            residingAddress: text(employee.residingAddress),
-            nationality: text(employee.nationality),
-            personalEmail: text(employee.personalEmail),
-            gender: text(employee.gender),
-            maritalStatus: text(employee.maritalStatus),
+            dateOfBirth: inputDate(priv.dateOfBirth),
+            residingAddress: text(priv.residingAddress),
+            nationality: text(priv.nationality),
+            personalEmail: text(priv.personalEmail),
+            gender: text(priv.gender),
+            maritalStatus: text(priv.maritalStatus),
             dateOfJoining: inputDate(employee.dateOfJoining),
-            accountNumber: text(employee.accountNumber),
-            bankName: text(employee.bankName),
-            ifscCode: text(employee.ifscCode),
-            panNo: text(employee.panNo),
-            uanNo: text(employee.uanNo),
-            empCode: text(employee.empCode),
+            accountNumber: text(priv.accountNumber),
+            bankName: text(priv.bankName),
+            ifscCode: text(priv.ifscCode),
+            panNo: text(priv.panNo),
+            uanNo: text(priv.uanNo),
+            empCode: text(priv.empCode),
           }}
         />
       ),
-    },
-  ];
+    });
+  }
 
   if (showSalary) {
     tabs.push({
@@ -173,12 +255,14 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
             <dt className="label">Joined</dt>
             <dd className="num text-ink-800">{formatDate(employee.dateOfJoining)}</dd>
           </div>
-          <div>
-            <dt className="label">Manager</dt>
-            <dd className="text-ink-800">
-              {employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : "—"}
-            </dd>
-          </div>
+          {employee.role === "EMPLOYEE" ? (
+            <div>
+              <dt className="label">Manager</dt>
+              <dd className="text-ink-800">
+                {employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : "—"}
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </div>
 
