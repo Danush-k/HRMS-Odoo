@@ -53,6 +53,7 @@ export function DetailsForm({
               initial={values.avatar}
               fallbackName={`${values.firstName} ${values.lastName}`}
               size={96}
+              employeeId={values.id}
             />
           ) : null}
         </div>
