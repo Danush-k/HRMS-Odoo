@@ -24,6 +24,7 @@ export function ImageField({
   fallbackName,
   size = 84,
   round = true,
+  allowAvatarPicker,
   employeeId,
 }: {
   name: string;
@@ -32,8 +33,10 @@ export function ImageField({
   fallbackName: string;
   size?: number;
   round?: boolean;
+  allowAvatarPicker?: boolean;
   employeeId?: string;
 }) {
+  const showAvatarOption = allowAvatarPicker ?? round;
   const [value, setValue] = useState(initial ?? "");
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -152,7 +155,7 @@ export function ImageField({
   return (
     <div className="flex items-center gap-4">
       {/* Hidden input for form submission */}
-      <input type="hidden" name={name} value={value} />
+      <input type="hidden" name={name} value={value} suppressHydrationWarning />
 
       {/* Hidden file input */}
       <input
@@ -160,6 +163,7 @@ export function ImageField({
         type="file"
         accept="image/png,image/jpeg,image/jpg"
         className="hidden"
+        suppressHydrationWarning
         onChange={(event) => {
           handleFileChange(event.target.files?.[0]);
           event.target.value = "";
@@ -198,25 +202,34 @@ export function ImageField({
           <button
             ref={triggerRef}
             type="button"
-            onClick={() => setMenuOpen((prev) => !prev)}
+            suppressHydrationWarning
+            onClick={() => {
+              if (!showAvatarOption && !hasCustomAvatar) {
+                handleUploadClick();
+              } else {
+                setMenuOpen((prev) => !prev);
+              }
+            }}
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             className="btn-secondary btn-sm flex items-center gap-1.5"
           >
-            <span>{hasCustomAvatar ? "Change photo" : label}</span>
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`text-ink-400 transition-transform duration-150 ${menuOpen ? "rotate-180" : ""}`}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <span>{hasCustomAvatar ? (showAvatarOption ? "Change photo" : "Change logo") : label}</span>
+            {(showAvatarOption || hasCustomAvatar) && (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`text-ink-400 transition-transform duration-150 ${menuOpen ? "rotate-180" : ""}`}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            )}
           </button>
 
           {/* Dropdown Menu */}
@@ -229,6 +242,7 @@ export function ImageField({
               <button
                 type="button"
                 role="menuitem"
+                suppressHydrationWarning
                 onClick={handleUploadClick}
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-ink-800 transition hover:bg-brand-50 hover:text-brand-700"
               >
@@ -238,23 +252,26 @@ export function ImageField({
                     <circle cx="12" cy="13" r="4" />
                   </svg>
                 </span>
-                <span>{hasCustomAvatar ? "Upload new photo" : "Upload photo"}</span>
+                <span>{hasCustomAvatar ? (showAvatarOption ? "Upload new photo" : "Upload new logo") : (showAvatarOption ? "Upload photo" : "Upload logo")}</span>
               </button>
 
-              <button
-                type="button"
-                role="menuitem"
-                onClick={handleChooseAvatarClick}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-ink-800 transition hover:bg-brand-50 hover:text-brand-700"
-              >
-                <span className="grid h-6 w-6 place-items-center rounded-md bg-brand-100/70 text-brand-700">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </span>
-                <span>{hasCustomAvatar ? "Choose another avatar" : "Choose an avatar"}</span>
-              </button>
+              {showAvatarOption && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  suppressHydrationWarning
+                  onClick={handleChooseAvatarClick}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-ink-800 transition hover:bg-brand-50 hover:text-brand-700"
+                >
+                  <span className="grid h-6 w-6 place-items-center rounded-md bg-brand-100/70 text-brand-700">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </span>
+                  <span>{hasCustomAvatar ? "Choose another avatar" : "Choose an avatar"}</span>
+                </button>
+              )}
 
               {hasCustomAvatar && (
                 <>
@@ -262,6 +279,7 @@ export function ImageField({
                   <button
                     type="button"
                     role="menuitem"
+                    suppressHydrationWarning
                     onClick={handleRemoveClick}
                     className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-danger transition hover:bg-danger-soft hover:text-danger"
                   >
@@ -271,7 +289,7 @@ export function ImageField({
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                       </svg>
                     </span>
-                    <span>Remove current photo</span>
+                    <span>{showAvatarOption ? "Remove current photo" : "Remove logo"}</span>
                   </button>
                 </>
               )}
