@@ -63,6 +63,9 @@ export async function checkInAction(): Promise<ActionState> {
     where: { employeeId_date: { employeeId: user.id, date: today } },
   });
 
+  if (existing?.checkIn && existing.checkOut) {
+    return failure("You have already completed attendance for today. Contact HR/Admin for corrections.");
+  }
   if (existing?.checkIn && !existing.checkOut) return failure("You are already checked in.");
   if (existing?.status === "LEAVE") return failure("You are on approved leave today.");
 
