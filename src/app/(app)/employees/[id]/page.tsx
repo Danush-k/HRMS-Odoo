@@ -14,6 +14,7 @@ import { PrivateInfoForm } from "./private-info-form";
 import { ResumeForm } from "./resume-form";
 import { ResetPasswordPanel } from "./reset-password-panel";
 import { SalaryForm } from "./salary-form";
+import { SalaryHistory } from "./salary-history";
 
 export const metadata: Metadata = { title: "Employee" };
 
@@ -115,7 +116,19 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
     ltaPercent: number;
     pfPercent: number;
     professionalTax: number;
+    effectiveFrom: Date;
   } | null) : null;
+
+  // History is an accountability record for the people who can change the
+  // structure, not a field the employee themselves needs — same boundary as
+  // editing it.
+  const salaryRevisions = showSalary && canEditSalary(viewer.role)
+    ? await db.salaryRevision.findMany({
+        where: { employeeId: employee.id },
+        orderBy: { effectiveTo: "desc" },
+        include: { changedBy: { select: { firstName: true, lastName: true } } },
+      })
+    : [];
 
   const tabs = [
     {
@@ -186,22 +199,27 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
       id: "salary",
       label: "Salary Info",
       content: (
-        <SalaryForm
-          employeeId={employee.id}
-          canEdit={canEditSalary(viewer.role)}
-          initial={{
-            monthlyWage: salary?.monthlyWage ?? 0,
-            workingDaysPerWeek: salary?.workingDaysPerWeek ?? 5,
-            breakHours: salary?.breakHours ?? 1,
-            basicPercent: salary?.basicPercent ?? 50,
-            hraPercentOfBasic: salary?.hraPercentOfBasic ?? 50,
-            standardAllowancePercent: salary?.standardAllowancePercent ?? 16.67,
-            performanceBonusPercent: salary?.performanceBonusPercent ?? 8.33,
-            ltaPercent: salary?.ltaPercent ?? 8.33,
-            pfPercent: salary?.pfPercent ?? 12,
-            professionalTax: salary?.professionalTax ?? 200,
-          }}
-        />
+        <div className="flex flex-col gap-5">
+          <SalaryForm
+            employeeId={employee.id}
+            canEdit={canEditSalary(viewer.role)}
+            initial={{
+              monthlyWage: salary?.monthlyWage ?? 0,
+              workingDaysPerWeek: salary?.workingDaysPerWeek ?? 5,
+              breakHours: salary?.breakHours ?? 1,
+              basicPercent: salary?.basicPercent ?? 50,
+              hraPercentOfBasic: salary?.hraPercentOfBasic ?? 50,
+              standardAllowancePercent: salary?.standardAllowancePercent ?? 16.67,
+              performanceBonusPercent: salary?.performanceBonusPercent ?? 8.33,
+              ltaPercent: salary?.ltaPercent ?? 8.33,
+              pfPercent: salary?.pfPercent ?? 12,
+              professionalTax: salary?.professionalTax ?? 200,
+            }}
+          />
+          {canEditSalary(viewer.role) ? (
+            <SalaryHistory revisions={salaryRevisions} currentSince={salary?.effectiveFrom ?? employee.dateOfJoining} />
+          ) : null}
+        </div>
       ),
     });
   }
