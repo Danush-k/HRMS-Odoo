@@ -150,7 +150,7 @@ body {
   }
 
   .table-wrap {
-    @apply overflow-x-auto rounded-[10px] border border-line bg-surface;
+    @apply overflow-x-auto rounded-xl border border-line bg-surface shadow-2xs;
   }
 
   .grid-table {
@@ -158,12 +158,12 @@ body {
   }
 
   .grid-table thead th {
-    @apply border-b border-line bg-ink-100/60 px-4 py-2.5 text-left text-[11px] font-semibold
-           uppercase tracking-[0.06em] text-ink-500;
+    @apply border-b border-brand-100/80 bg-brand-50/70 px-4 py-3 text-left text-[11px] font-bold
+           uppercase tracking-[0.06em] text-brand-900;
   }
 
   .grid-table tbody td {
-    @apply border-b border-line px-4 py-3 align-middle text-ink-800;
+    @apply border-b border-line px-4 py-3.5 align-middle text-ink-800 transition-colors;
   }
 
   .grid-table tbody tr:last-child td {
@@ -171,7 +171,7 @@ body {
   }
 
   .grid-table tbody tr:hover {
-    @apply bg-brand-50/50;
+    @apply bg-brand-50/30;
   }
 
   .section-title {
