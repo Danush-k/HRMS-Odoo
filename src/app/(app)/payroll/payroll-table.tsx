@@ -533,12 +533,13 @@ export function PayrollTable({
               </tr>
             </thead>
             <tbody>
-              {filteredEmployees.map((employee) => {
+              {filteredEmployees.map((employee, index) => {
                 const payslip = byEmployee.get(employee.id);
                 const salaryValues = getSalaryValues(employee);
                 const breakdown = computeSalary(salaryValues);
                 const isTooltipOpen = activeTooltipId === employee.id;
                 const isThisGenerating = generatingSingleId === employee.id;
+                const isBottomRows = index >= Math.max(1, filteredEmployees.length - 2);
 
                 return (
                   <tr key={employee.id} className="transition-colors hover:bg-brand-50/30">
@@ -583,39 +584,52 @@ export function PayrollTable({
                             <span className="text-[10px] text-ink-400">ℹ</span>
                           </button>
 
-                          {/* Quick Component Breakdown Tooltip Popover */}
+                          {/* Quick Component Breakdown Tooltip Popover (opens upward for bottom rows) */}
                           {isTooltipOpen ? (
-                            <div className="absolute left-0 top-full z-30 mt-1 w-64 rounded-xl border border-line bg-surface p-3 shadow-xl text-left font-sans animate-in fade-in zoom-in-95">
-                              <div className="flex items-center justify-between border-b border-line pb-1.5 mb-2">
-                                <span className="text-[11px] font-bold text-ink-900">Salary Breakdown</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveTooltipId(null);
-                                  }}
-                                  className="text-ink-400 hover:text-ink-700 text-xs"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                              <ul className="flex flex-col gap-1 text-[11px]">
-                                {breakdown.components.map((c) => (
-                                  <li key={c.key} className="flex justify-between text-ink-600">
-                                    <span>{c.label}:</span>
-                                    <span className="mono font-medium text-ink-900">{formatCurrency(c.amount)}</span>
+                            <>
+                              <div
+                                className="fixed inset-0 z-20 cursor-default"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveTooltipId(null);
+                                }}
+                              />
+                              <div
+                                className={`absolute left-0 ${
+                                  isBottomRows ? "bottom-full mb-2" : "top-full mt-2"
+                                } z-30 w-64 rounded-xl border border-line bg-surface p-3.5 shadow-2xl text-left font-sans animate-in fade-in zoom-in-95`}
+                              >
+                                <div className="flex items-center justify-between border-b border-line pb-1.5 mb-2">
+                                  <span className="text-[11px] font-bold text-ink-900">Salary Breakdown</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveTooltipId(null);
+                                    }}
+                                    className="text-ink-400 hover:text-ink-700 text-xs"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                                <ul className="flex flex-col gap-1 text-[11px]">
+                                  {breakdown.components.map((c) => (
+                                    <li key={c.key} className="flex justify-between text-ink-600">
+                                      <span>{c.label}:</span>
+                                      <span className="mono font-medium text-ink-900">{formatCurrency(c.amount)}</span>
+                                    </li>
+                                  ))}
+                                  <li className="flex justify-between border-t border-line/60 pt-1 text-danger">
+                                    <span>PF Employee:</span>
+                                    <span className="mono font-medium">− {formatCurrency(breakdown.pfEmployee)}</span>
                                   </li>
-                                ))}
-                                <li className="flex justify-between border-t border-line/60 pt-1 text-danger">
-                                  <span>PF Employee:</span>
-                                  <span className="mono font-medium">− {formatCurrency(breakdown.pfEmployee)}</span>
-                                </li>
-                                <li className="flex justify-between text-danger">
-                                  <span>Prof. Tax:</span>
-                                  <span className="mono font-medium">− {formatCurrency(breakdown.professionalTax)}</span>
-                                </li>
-                              </ul>
-                            </div>
+                                  <li className="flex justify-between text-danger">
+                                    <span>Prof. Tax:</span>
+                                    <span className="mono font-medium">− {formatCurrency(breakdown.professionalTax)}</span>
+                                  </li>
+                                </ul>
+                              </div>
+                            </>
                           ) : null}
                         </td>
 
