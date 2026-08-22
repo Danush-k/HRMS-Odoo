@@ -38,6 +38,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
       email: true,
       role: true,
       status: true,
+      emailVerifiedAt: true,
       firstName: true,
       lastName: true,
       jobPosition: true,
