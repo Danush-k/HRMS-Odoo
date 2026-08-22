@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { DayflowLogoMark } from "./brand-icons";
 
 /** The centred, branded frame shared by pages outside the application shell. */
 export function AuthShell({
@@ -48,10 +47,9 @@ export function AuthShell({
 
       <div className={`relative z-10 w-full ${className}`}>
         {!hideHeader ? (
-          <div className="mb-6 text-center flex flex-col items-center">
-            {/* Logo Mark + Capitalized DayFlow Wordmark */}
-            <Link href="/sign-in" className="inline-flex flex-col items-center gap-2 group mb-3">
-              <DayflowLogoMark size={48} className="rounded-2xl shadow-md transition-transform group-hover:scale-105" />
+          <div className="mb-6 text-center">
+            {/* Capitalized DayFlow Wordmark */}
+            <Link href="/sign-in" className="inline-block group mb-3">
               <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-brand-700 font-['Space_Grotesk',sans-serif] group-hover:text-brand-800 transition-colors">
                 DayFlow
               </span>
