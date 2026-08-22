@@ -84,15 +84,12 @@ export default async function EmployeesPage({
               <p className="mono mt-1 text-xs text-brand-600 font-semibold">ID: {user.loginId}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-surface p-3 border border-line shadow-2xs">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-500">Attendance Status</p>
-              <div className="mt-1 flex items-center gap-2">
-                <span className={`h-2.5 w-2.5 rounded-full ${checkedInSince ? "bg-present animate-pulse" : onLeaveToday ? "bg-leave" : "bg-absent"}`} />
-                <span className="text-xs font-bold text-ink-900">
-                  {checkedInSince ? "Checked In" : onLeaveToday ? "On Leave" : "Not Checked In"}
-                </span>
-              </div>
+          <div className="flex items-center gap-2.5">
+            <div className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-3 shadow-2xs">
+              <span className={`h-2 w-2 rounded-full ${checkedInSince ? "bg-present animate-pulse" : onLeaveToday ? "bg-leave" : "bg-absent"}`} />
+              <span className="text-xs font-semibold text-ink-800">
+                {checkedInSince ? "Checked In" : onLeaveToday ? "On Leave" : "Not Checked In"}
+              </span>
             </div>
           </div>
         </div>
@@ -482,23 +479,20 @@ export default async function EmployeesPage({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-surface p-3 border border-line shadow-2xs">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-500">Attendance Status</p>
-            <div className="mt-1 flex items-center gap-2">
-              <span
-                className={`h-2.5 w-2.5 rounded-full ${userCheckedIn ? "bg-present animate-pulse" : userOnLeave ? "bg-leave" : "bg-absent"
-                  }`}
-              />
-              <span className="text-xs font-bold text-ink-900">
-                {userCheckedIn ? "Checked In" : userOnLeave ? "On Leave" : "Not Checked In"}
-              </span>
-            </div>
+        <div className="flex items-center gap-2.5">
+          <div className="inline-flex h-10 w-36 items-center justify-center gap-2 rounded-lg border border-line bg-surface px-3 shadow-2xs">
+            <span
+              className={`h-2 w-2 rounded-full ${userCheckedIn ? "bg-present animate-pulse" : userOnLeave ? "bg-leave" : "bg-absent"
+                }`}
+            />
+            <span className="text-xs font-semibold text-ink-800">
+              {userCheckedIn ? "Checked In" : userOnLeave ? "On Leave" : "Not Checked In"}
+            </span>
           </div>
 
           <Link
             href="/employees/new"
-            className="btn-primary inline-flex items-center gap-2 shadow-xs transition-transform active:scale-[0.98] h-[50px] px-4"
+            className="btn-primary inline-flex h-10 w-36 items-center justify-center gap-2 text-xs font-semibold shadow-xs hover:shadow-sm transition-all active:scale-[0.98]"
           >
             <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
               <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
