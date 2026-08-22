@@ -101,8 +101,8 @@ export default async function EmployeesPage({
         {/* 3.2.1 QUICK ACCESS CARDS GRID */}
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-500 mb-3">Quick Access Dashboard</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
             {/* CARD 1: PROFILE */}
             <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md">
               <div>
@@ -127,7 +127,7 @@ export default async function EmployeesPage({
               </div>
               <Link
                 href="/profile"
-                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold"
+                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold hover:border-brand-300 hover:text-brand-700"
               >
                 View Full Profile
                 <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
@@ -137,18 +137,18 @@ export default async function EmployeesPage({
             </div>
 
             {/* CARD 2: ATTENDANCE */}
-            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-present/60 hover:shadow-md">
+            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-present">02. Attendance</span>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-present-soft text-present">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-brand-600">02. Attendance</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10" />
                       <polyline points="12 6 12 12 16 14" />
                     </svg>
                   </div>
                 </div>
-                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-present transition-colors">Daily Clock-In</h3>
+                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-brand-600 transition-colors">Daily Clock-In</h3>
                 <p className="mt-1 text-xs text-ink-500">
                   Track your daily work hours, check-in timestamps and logs.
                 </p>
@@ -158,7 +158,7 @@ export default async function EmployeesPage({
               </div>
               <Link
                 href="/attendance"
-                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold"
+                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold hover:border-brand-300 hover:text-brand-700"
               >
                 Attendance History
                 <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
@@ -168,11 +168,11 @@ export default async function EmployeesPage({
             </div>
 
             {/* CARD 3: LEAVE REQUESTS */}
-            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-leave/60 hover:shadow-md">
+            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-leave">03. Time Off</span>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-leave-soft text-leave">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-brand-600">03. Time Off</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                       <line x1="16" y1="2" x2="16" y2="6" />
@@ -181,19 +181,19 @@ export default async function EmployeesPage({
                     </svg>
                   </div>
                 </div>
-                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-leave transition-colors">Leave Balances</h3>
+                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-brand-600 transition-colors">Leave Balances</h3>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {leaveBalances.map((bal) => (
-                    <div key={bal.id} className="rounded bg-brand-50/70 border border-brand-200 px-2 py-1 text-[11px]">
+                    <div key={bal.id} className="rounded-lg bg-brand-50 border border-brand-200/80 px-2.5 py-1 text-[11px] shadow-3xs">
                       <span className="font-semibold text-brand-800">{bal.leaveType.name}: </span>
-                      <span className="font-bold text-brand-600">{bal.allocated - bal.used} days left</span>
+                      <span className="font-bold text-brand-700">{bal.allocated - bal.used} days left</span>
                     </div>
                   ))}
                 </div>
               </div>
               <Link
                 href="/time-off"
-                className="btn-primary mt-5 w-full justify-between text-xs font-semibold"
+                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold hover:border-brand-300 hover:text-brand-700"
               >
                 Apply for Time Off
                 <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
@@ -202,37 +202,12 @@ export default async function EmployeesPage({
               </Link>
             </div>
 
-            {/* CARD 4: LOGOUT */}
-            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-danger/60 hover:shadow-md">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-danger">04. Session</span>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-danger-soft text-danger">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                  </div>
-                </div>
-                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-danger transition-colors">Sign Out</h3>
-                <p className="mt-1 text-xs text-ink-500">
-                  Signed in as <strong className="font-semibold text-ink-700">{user.loginId}</strong>
-                </p>
-              </div>
-              <form action={signOutAction} className="mt-5">
-                <button type="submit" className="btn-danger w-full justify-center text-xs font-semibold">
-                  Logout Session
-                </button>
-              </form>
-            </div>
-
           </div>
         </div>
 
         {/* RECENT ACTIVITY & ALERTS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
+
           {/* Recent Attendance */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
@@ -330,23 +305,27 @@ export default async function EmployeesPage({
   // Calculate quick metrics for the stat summary cards
   let inOfficeCount = 0;
   let onLeaveCount = 0;
+  let halfDayCount = 0;
 
   const statusMap = new Map<string, "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY">();
   for (const row of allTodayAttendance) {
     if (row.status === "LEAVE") {
       statusMap.set(row.employeeId, "LEAVE");
       onLeaveCount++;
+    } else if (row.status === "HALF_DAY") {
+      statusMap.set(row.employeeId, "HALF_DAY");
+      halfDayCount++;
     } else if (row.checkIn && !row.checkOut) {
       statusMap.set(row.employeeId, "PRESENT");
       inOfficeCount++;
-    } else if (row.status === "HALF_DAY" || row.status === "PRESENT") {
-      statusMap.set(row.employeeId, row.status as "PRESENT" | "HALF_DAY");
+    } else if (row.status === "PRESENT") {
+      statusMap.set(row.employeeId, "PRESENT");
       inOfficeCount++;
     } else {
       statusMap.set(row.employeeId, "ABSENT");
     }
   }
-  const absentCount = Math.max(0, totalEmployees - inOfficeCount - onLeaveCount);
+  const absentCount = Math.max(0, totalEmployees - inOfficeCount - onLeaveCount - halfDayCount);
 
   // Fetch pending leave requests for Admin approval widget (SRS 3.2.2)
   const pendingLeaveRequests = await db.leaveRequest.findMany({
@@ -425,6 +404,11 @@ export default async function EmployeesPage({
       .filter(([_, st]) => st === "PRESENT" || st === "HALF_DAY" || st === "LEAVE")
       .map(([id]) => id);
     where.id = { notIn: nonAbsentEmpIds };
+  } else if (status === "HALF_DAY") {
+    const halfDayEmpIds = Array.from(statusMap.entries())
+      .filter(([_, st]) => st === "HALF_DAY")
+      .map(([id]) => id);
+    where.id = { in: halfDayEmpIds };
   }
 
   // P6: Database-level total count and pagination calculation
@@ -458,6 +442,18 @@ export default async function EmployeesPage({
     employees.map((emp) => [emp.id, statusMap.get(emp.id) || "ABSENT"])
   );
 
+  const userAttendanceStatus = statusMap.get(user.id) ?? "ABSENT";
+  const userCheckedIn = userAttendanceStatus === "PRESENT" || userAttendanceStatus === "HALF_DAY";
+  const userOnLeave = userAttendanceStatus === "LEAVE";
+
+  const profileHref = (empId: string) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (status && status !== "ALL") params.set("status", status);
+    const qs = params.toString();
+    return `/employees/${empId}${qs ? `?${qs}` : ""}`;
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {denied ? (
@@ -469,37 +465,56 @@ export default async function EmployeesPage({
         </div>
       ) : null}
 
-      {/* Header Section */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">Admin & HR Dashboard</h1>
-            <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-              {totalEmployees} {totalEmployees === 1 ? "Member" : "Members"}
-            </span>
+      {/* Welcome Header Card for Admin & HR */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-brand-200/80 bg-gradient-to-r from-brand-50 to-surface p-6 shadow-xs">
+        <div className="flex items-center gap-4">
+          <Avatar src={user.avatar} name={`${user.firstName} ${user.lastName}`} size={64} />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-ink-900">Welcome back, {user.firstName}!</h1>
+              <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+                {user.role}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-ink-600">
+              {user.jobPosition || (user.role === "ADMIN" ? "Administrator" : "HR Officer")} • {user.department || user.company.name}
+            </p>
+            <p className="mono mt-1 text-xs text-brand-600 font-semibold">ID: {user.loginId}</p>
           </div>
-          <p className="mt-1 text-sm text-ink-500">
-            Manage employees, inspect attendance, and review leave approvals for <strong className="font-semibold text-ink-700">{user.company.name}</strong>
-          </p>
         </div>
 
-        <Link
-          href="/employees/new"
-          className="btn-primary inline-flex items-center gap-2 shadow-xs transition-transform active:scale-[0.98]"
-        >
-          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
-            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-          </svg>
-          Add Employee
-        </Link>
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg bg-surface p-3 border border-line shadow-2xs">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-500">Attendance Status</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${userCheckedIn ? "bg-present animate-pulse" : userOnLeave ? "bg-leave" : "bg-absent"
+                  }`}
+              />
+              <span className="text-xs font-bold text-ink-900">
+                {userCheckedIn ? "Checked In" : userOnLeave ? "On Leave" : "Not Checked In"}
+              </span>
+            </div>
+          </div>
+
+          <Link
+            href="/employees/new"
+            className="btn-primary inline-flex items-center gap-2 shadow-xs transition-transform active:scale-[0.98] h-[50px] px-4"
+          >
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+              <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+            </svg>
+            Add Employee
+          </Link>
+        </div>
       </div>
 
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div className="card relative overflow-hidden p-4 transition-all hover:border-ink-300 shadow-xs">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-brand-300 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">Total Team</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
                 <path d="M7 8a3 3 0 100-6 3 3 0 000 6zM14.5 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1.615 16.428a1.224 1.224 0 01-.569-1.175 6.002 6.002 0 0111.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 017 17a9.953 9.953 0 01-5.385-.572zM14.5 16h-.187.002c.322-.452.544-.96.643-1.5a4.5 4.5 0 00-7.858-3.003c.277-.04.558-.06.843-.06a7.5 7.5 0 016.92 4.563h-.363z" />
               </svg>
@@ -511,10 +526,10 @@ export default async function EmployeesPage({
           </div>
         </div>
 
-        <div className="card relative overflow-hidden p-4 transition-all hover:border-present/40 shadow-xs">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-brand-300 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-present">In Office</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-present-soft text-present">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">In Office</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               <svg viewBox="0 20 20" width="18" height="18" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
               </svg>
@@ -522,16 +537,16 @@ export default async function EmployeesPage({
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-ink-900 num">{inOfficeCount}</span>
-            <span className="text-xs font-medium text-present">
+            <span className="text-xs font-medium text-ink-500">
               {totalEmployees ? Math.round((inOfficeCount / totalEmployees) * 100) : 0}% present
             </span>
           </div>
         </div>
 
-        <div className="card relative overflow-hidden p-4 transition-all hover:border-leave/40 shadow-xs">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-brand-300 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-leave">On Leave</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-leave-soft text-leave">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">On Leave</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" />
               </svg>
@@ -539,14 +554,14 @@ export default async function EmployeesPage({
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-ink-900 num">{onLeaveCount}</span>
-            <span className="text-xs font-medium text-leave">approved leaves</span>
+            <span className="text-xs font-medium text-ink-500">approved leaves</span>
           </div>
         </div>
 
-        <div className="card relative overflow-hidden p-4 transition-all hover:border-absent/40 shadow-xs">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-brand-300 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-absent">Absent</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-absent-soft text-absent">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">Absent</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
               </svg>
@@ -606,16 +621,26 @@ export default async function EmployeesPage({
         </div>
       ) : null}
 
+      {/* Section Title */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-ink-900 tracking-tight">Employee Directory</h2>
+          <p className="text-xs text-ink-500">
+            Search, filter, and manage team members across all company departments
+          </p>
+        </div>
+      </div>
+
       {/* Toolbar & Filters */}
-      <div className="card p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-        {/* Status Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
+      <div className="card p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs rounded-xl">
+        {/* Status Filter Segmented Control */}
+        <div className="flex flex-wrap items-center gap-1 rounded-lg bg-ink-100/60 p-1 border border-line/60 text-xs font-medium">
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "ALL" }).toString()}`}
             className={`rounded-md px-3 py-1.5 transition-colors ${
               status === "ALL"
-                ? "bg-brand-600 font-semibold text-white shadow-xs"
-                : "bg-surface text-ink-600 hover:bg-ink-100"
+                ? "bg-surface font-semibold text-brand-700 shadow-2xs border border-line/80"
+                : "text-ink-600 hover:text-ink-900 hover:bg-surface/50"
             }`}
           >
             All ({totalEmployees})
@@ -624,34 +649,45 @@ export default async function EmployeesPage({
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "PRESENT" }).toString()}`}
             className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
               status === "PRESENT"
-                ? "bg-present font-semibold text-white shadow-xs"
-                : "bg-surface text-ink-600 hover:bg-present-soft hover:text-present"
+                ? "bg-surface font-semibold text-present shadow-2xs border border-line/80"
+                : "text-ink-600 hover:text-present hover:bg-surface/50"
             }`}
           >
-            <span className={`h-2 w-2 rounded-full ${status === "PRESENT" ? "bg-white" : "bg-present"}`} />
+            <span className="h-2 w-2 rounded-full bg-present" />
             In Office ({inOfficeCount})
           </Link>
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "LEAVE" }).toString()}`}
             className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
               status === "LEAVE"
-                ? "bg-leave font-semibold text-white shadow-xs"
-                : "bg-surface text-ink-600 hover:bg-leave-soft hover:text-leave"
+                ? "bg-surface font-semibold text-leave shadow-2xs border border-line/80"
+                : "text-ink-600 hover:text-leave hover:bg-surface/50"
             }`}
           >
-            <span className={`h-2 w-2 rounded-full ${status === "LEAVE" ? "bg-white" : "bg-leave"}`} />
+            <span className="h-2 w-2 rounded-full bg-leave" />
             On Leave ({onLeaveCount})
           </Link>
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "ABSENT" }).toString()}`}
             className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
               status === "ABSENT"
-                ? "bg-absent font-semibold text-white shadow-xs"
-                : "bg-surface text-ink-600 hover:bg-absent-soft hover:text-absent"
+                ? "bg-surface font-semibold text-absent shadow-2xs border border-line/80"
+                : "text-ink-600 hover:text-absent hover:bg-surface/50"
             }`}
           >
-            <span className={`h-2 w-2 rounded-full ${status === "ABSENT" ? "bg-white" : "bg-absent"}`} />
+            <span className="h-2 w-2 rounded-full bg-absent" />
             Absent ({absentCount})
+          </Link>
+          <Link
+            href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "HALF_DAY" }).toString()}`}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
+              status === "HALF_DAY"
+                ? "bg-surface font-semibold text-brand-700 shadow-2xs border border-line/80"
+                : "text-ink-600 hover:text-brand-700 hover:bg-surface/50"
+            }`}
+          >
+            <span className="h-2 w-2 rounded-full bg-brand-600" />
+            Half Day ({halfDayCount})
           </Link>
         </div>
 
@@ -661,12 +697,12 @@ export default async function EmployeesPage({
             <SearchInput placeholder="Search by name, position or ID..." />
           </Suspense>
 
-          <div className="flex items-center rounded-md border border-line bg-ink-100/60 p-0.5">
+          <div className="flex items-center rounded-lg border border-line bg-ink-100/60 p-1">
             <Link
               href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "grid", ...(page && page !== "1" ? { page } : {}) }).toString()}`}
               title="Grid View"
-              className={`rounded p-1.5 transition-colors ${
-                view === "grid" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
+              className={`rounded-md p-1.5 transition-colors ${
+                view === "grid" ? "bg-surface text-brand-700 shadow-2xs border border-line/80" : "text-ink-500 hover:text-ink-900"
               }`}
             >
               <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
@@ -676,8 +712,8 @@ export default async function EmployeesPage({
             <Link
               href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "table", ...(page && page !== "1" ? { page } : {}) }).toString()}`}
               title="Table View"
-              className={`rounded p-1.5 transition-colors ${
-                view === "table" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
+              className={`rounded-md p-1.5 transition-colors ${
+                view === "table" ? "bg-surface text-brand-700 shadow-2xs border border-line/80" : "text-ink-500 hover:text-ink-900"
               }`}
             >
               <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
@@ -732,7 +768,7 @@ export default async function EmployeesPage({
                   return (
                     <tr key={emp.id} className={`group ${!isActive ? "bg-ink-50/40 opacity-85" : ""}`}>
                       <td>
-                        <Link href={`/employees/${emp.id}`} className="flex items-center gap-3">
+                        <Link href={profileHref(emp.id)} className="flex items-center gap-3">
                           <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={36} />
                           <div>
                             <p className="font-semibold text-ink-900 group-hover:text-brand-600 transition-colors">
@@ -753,13 +789,12 @@ export default async function EmployeesPage({
                       </td>
                       <td>
                         <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                            emp.role === "ADMIN"
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${emp.role === "ADMIN"
                               ? "bg-purple-100 text-purple-800"
                               : emp.role === "HR"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-ink-100 text-ink-700"
-                          }`}
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-ink-100 text-ink-700"
+                            }`}
                         >
                           {emp.role}
                         </span>
@@ -780,28 +815,34 @@ export default async function EmployeesPage({
                       </td>
                       <td>
                         <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            st === "PRESENT" || st === "HALF_DAY"
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${st === "PRESENT" || st === "HALF_DAY"
                               ? "bg-present-soft text-present"
                               : st === "LEAVE"
-                              ? "bg-leave-soft text-leave"
-                              : "bg-absent-soft text-absent"
-                          }`}
+                                ? "bg-leave-soft text-leave"
+                                : "bg-absent-soft text-absent"
+                            }`}
                         >
                           <span
-                            className={`h-2 w-2 rounded-full ${
-                              st === "PRESENT" || st === "HALF_DAY"
+                            className={`h-2 w-2 rounded-full ${st === "PRESENT" || st === "HALF_DAY"
                                 ? "bg-present"
                                 : st === "LEAVE"
-                                ? "bg-leave"
-                                : "bg-absent"
-                            }`}
+                                  ? "bg-leave"
+                                  : "bg-absent"
+                              }`}
                           />
                           {st === "PRESENT" ? "In Office" : st === "HALF_DAY" ? "Half Day" : st === "LEAVE" ? "On Leave" : "Absent"}
                         </span>
                       </td>
                       <td className="text-right">
-                        <EmployeeActionMenu employeeId={emp.id} />
+                        <Link
+                          href={`/employees/${emp.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800 hover:underline"
+                        >
+                          View Profile
+                          <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                          </svg>
+                        </Link>
                       </td>
                     </tr>
                   );
@@ -855,11 +896,10 @@ export default async function EmployeesPage({
                         ...(view ? { view } : {}),
                         page: String(p),
                       }).toString()}`}
-                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${
-                        isCurrent
+                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${isCurrent
                           ? "bg-brand-600 text-white shadow-xs"
                           : "bg-surface text-ink-700 hover:bg-ink-100 border border-line"
-                      }`}
+                        }`}
                     >
                       {p}
                     </Link>
@@ -903,91 +943,72 @@ export default async function EmployeesPage({
               const isLeave = st === "LEAVE";
               const isActive = emp.status === "ACTIVE";
 
-              const borderAccent = isPresent
-                ? "border-t-present"
-                : isLeave
-                ? "border-t-leave"
-                : "border-t-absent";
-
               return (
                 <li key={emp.id}>
                   <Link
-                    href={`/employees/${emp.id}`}
-                    className={`card group relative flex flex-col justify-between overflow-hidden border-t-4 ${borderAccent} ${
-                      !isActive ? "bg-orange-50/20 border-ink-300 opacity-90" : ""
-                    } p-4 transition-all duration-200 hover:-translate-y-1 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5 h-full`}
+                    href={profileHref(emp.id)}
+                    className="card group relative flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-surface p-4 transition-colors duration-150 hover:border-brand-400 hover:bg-brand-50/15 shadow-2xs h-full"
                   >
                     <div>
-                      {/* Top Row: Avatar + Role Badge + Active/Inactive Status Badge */}
+                      {/* Top Row: Avatar with presence dot + Role and Active badges */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="relative">
-                          <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={52} />
+                          <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={46} />
                           <span
-                            className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface ${
+                            className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface ${
                               isPresent ? "bg-present" : isLeave ? "bg-leave" : "bg-absent"
                             }`}
                             title={`Today: ${isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}`}
                           />
                         </div>
 
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex items-center gap-1.5">
-                            {/* P8: Visual Status Indicator */}
-                            {isActive ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                                Active
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-orange-800 border border-orange-200">
-                                <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                                Inactive
-                              </span>
-                            )}
-
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                                emp.role === "ADMIN"
-                                  ? "bg-purple-100 text-purple-800"
-                                  : emp.role === "HR"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-ink-100 text-ink-600"
-                              }`}
-                            >
-                              {emp.role}
+                        <div className="flex items-center gap-1.5">
+                          {isActive ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/70">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                              Active
                             </span>
-                          </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-ink-100 px-2 py-0.5 text-[10px] font-medium text-ink-600 border border-line">
+                              <span className="h-1.5 w-1.5 rounded-full bg-ink-400" />
+                              Inactive
+                            </span>
+                          )}
 
                           <span
-                            className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
-                              isPresent ? "text-present" : isLeave ? "text-leave" : "text-absent"
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                              emp.role === "ADMIN"
+                                ? "bg-brand-50 text-brand-800 border border-brand-200/80"
+                                : emp.role === "HR"
+                                  ? "bg-blue-50 text-blue-700 border border-blue-200/80"
+                                  : "bg-ink-100 text-ink-700 border border-line"
                             }`}
                           >
-                            {isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}
+                            {emp.role}
                           </span>
                         </div>
                       </div>
 
                       {/* Employee Info */}
                       <div className="mt-3">
-                        <h3 className="truncate text-base font-bold text-ink-900 group-hover:text-brand-600 transition-colors">
+                        <h3 className="truncate text-sm font-bold text-ink-900 group-hover:text-brand-700 transition-colors">
                           {emp.firstName} {emp.lastName}
                         </h3>
-                        <p className="truncate text-xs font-medium text-ink-600 mt-0.5">
+                        <p className="truncate text-xs font-medium text-ink-700 mt-0.5">
                           {emp.jobPosition || "No Position Assigned"}
                         </p>
-                        <p className="truncate text-xs text-ink-400">
+                        <p className="truncate text-[11px] text-ink-500">
                           {emp.department || "General Department"}
                         </p>
                       </div>
                     </div>
 
                     {/* Footer Info: Login ID & Email */}
-                    <div className="mt-4 border-t border-line/60 pt-3 flex items-center justify-between gap-2">
-                      <span className="mono rounded bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 border border-brand-200/80">
+                    <div className="mt-3.5 border-t border-line/60 pt-2.5 flex items-center justify-between gap-2">
+                      <span className="mono rounded-md bg-brand-50/80 px-2 py-0.5 text-[11px] font-semibold text-brand-800 border border-brand-200/60">
                         {emp.loginId}
                       </span>
-                      <span className="truncate text-[11px] text-ink-400 max-w-[130px]" title={emp.email}>
+                      <span className="truncate text-[11px] text-ink-500 font-normal max-w-[140px]" title={emp.email}>
                         {emp.email}
                       </span>
                     </div>
@@ -1042,11 +1063,10 @@ export default async function EmployeesPage({
                         ...(view ? { view } : {}),
                         page: String(p),
                       }).toString()}`}
-                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${
-                        isCurrent
+                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${isCurrent
                           ? "bg-brand-600 text-white shadow-xs"
                           : "bg-surface text-ink-700 hover:bg-ink-100 border border-line"
-                      }`}
+                        }`}
                     >
                       {p}
                     </Link>

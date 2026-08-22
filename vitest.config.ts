@@ -6,7 +6,7 @@ export default defineConfig({
     environment: "node",
     globals: true,
     env: {
-      DATABASE_URL: "file:./dev.db",
+      DATABASE_URL: process.env.DATABASE_URL || "file:./dev.db",
       SESSION_SECRET: "test-secret-at-least-32-characters-long-example",
     },
   },
