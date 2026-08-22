@@ -119,7 +119,7 @@ export async function signUpAction(_prev: ActionState, form: FormData): Promise<
     loginId: admin.loginId,
   });
 
-  redirect("/verify-email");
+  redirect(admin.mustChangePassword ? "/first-login" : "/employees");
 }
 
 export async function signInAction(_prev: ActionState, form: FormData): Promise<ActionState> {

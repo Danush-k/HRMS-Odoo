@@ -10,7 +10,7 @@ import { formatDate, inputDate } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { ChangePasswordForm } from "../../profile/change-password-form";
 import { DetailsForm } from "./details-form";
-import { DocumentsSection } from "./documents-section";
+import { DocumentsSection, type DocumentItem } from "./documents-section";
 import { PrivateInfoForm } from "./private-info-form";
 import { ResumeForm } from "./resume-form";
 import { ResetPasswordPanel } from "./reset-password-panel";
@@ -209,10 +209,21 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
   }
 
   if (canViewDocs) {
-    const documents = await db.document.findMany({
+    const rawDocs = await db.document.findMany({
       where: { employeeId: employee.id },
-      orderBy: { createdAt: "desc" },
+      orderBy: { uploadedAt: "desc" },
     });
+
+    const documents: DocumentItem[] = rawDocs.map((doc) => ({
+      id: doc.id,
+      name: doc.name,
+      type: doc.category,
+      fileData: doc.fileUrl,
+      fileType: doc.mimeType,
+      fileSize: doc.fileSize,
+      uploadedBy: doc.uploadedBy,
+      createdAt: doc.uploadedAt,
+    }));
 
     tabs.push({
       id: "documents",

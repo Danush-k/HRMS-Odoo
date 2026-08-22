@@ -60,9 +60,9 @@ export async function uploadDocumentAction(_prev: ActionState, form: FormData): 
     data: {
       employeeId: targetId,
       name,
-      type,
-      fileData,
-      fileType: fileType || "application/octet-stream",
+      category: type,
+      fileUrl: fileData,
+      mimeType: fileType || "application/octet-stream",
       fileSize: fileSize || 0,
       uploadedBy,
     },
