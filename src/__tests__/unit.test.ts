@@ -59,3 +59,42 @@ describe("Date & Working Day Utilities", () => {
     expect(key).toBeInstanceOf(Date);
   });
 });
+
+describe("Resume Text Parser", () => {
+  it("extracts summary, skills, certifications, and interests accurately", async () => {
+    const { parseResumeText } = await import("../lib/resume-parser");
+
+    const sampleResume = `
+    Kavin Soorya
+    Software Engineer
+
+    Summary
+    Full-stack software developer with 4 years of experience building enterprise web applications and scalable APIs.
+
+    Technical Skills
+    TypeScript, Next.js, Python, PostgreSQL, Docker, Git
+
+    Certifications
+    AWS Certified Cloud Practitioner
+    Odoo Functional Certification
+
+    Interests & Hobbies
+    Cricket, Open-Source Contributions, Chess
+
+    What I Love About My Job
+    I am passionate about solving complex workflow problems and crafting clean user experiences.
+    `;
+
+    const parsed = parseResumeText(sampleResume);
+
+    expect(parsed.about).toContain("Full-stack software developer");
+    expect(parsed.skills).toContain("TypeScript");
+    expect(parsed.skills).toContain("Next.js");
+    expect(parsed.skills).toContain("PostgreSQL");
+    expect(parsed.certifications).toContain("AWS Certified Cloud Practitioner");
+    expect(parsed.certifications).toContain("Odoo Functional Certification");
+    expect(parsed.interests).toContain("Cricket");
+    expect(parsed.loveAboutJob).toContain("passionate about solving complex workflow problems");
+  });
+});
+

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { TopNav } from "@/components/top-nav";
-import { requireUser } from "@/lib/auth";
+import { isManager, requireUser } from "@/lib/auth";
 import { ROLE_LABEL } from "@/lib/constants";
 import { dayKey } from "@/lib/dates";
 import { db } from "@/lib/db";
@@ -27,6 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         companyLogo={user.company.logo}
         checkedInSince={openSince}
         onLeaveToday={today?.status === "LEAVE"}
+        isManager={isManager(user.role)}
         user={{
           name: `${user.firstName} ${user.lastName}`,
           loginId: user.loginId,

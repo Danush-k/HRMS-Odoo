@@ -5,6 +5,8 @@ import { Suspense } from "react";
 import { PeriodNav } from "@/components/period-nav";
 import { SearchInput } from "@/components/search-input";
 import { AttendanceChip, Avatar, EmptyState } from "@/components/ui";
+import { EditAttendanceModal } from "./edit-attendance-modal";
+import { EmployeeAttendanceCalendar } from "./calendar-view";
 import { STANDARD_WORK_HOURS, extraMinutes } from "@/lib/attendance";
 import { isManager, requireUser } from "@/lib/auth";
 import {
@@ -24,7 +26,7 @@ import { db } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Attendance" };
 
-type Search = { view?: string; date?: string; month?: string; week?: string; q?: string };
+type Search = { view?: string; date?: string; month?: string; week?: string; q?: string; display?: string };
 
 export default async function AttendancePage({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
@@ -250,6 +252,7 @@ async function TeamDay({ params, companyId }: { params: Search; companyId: strin
                 <th>Work Hours</th>
                 <th>Extra Hours</th>
                 <th>Status</th>
+                <th className="text-right">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -275,6 +278,22 @@ async function TeamDay({ params, companyId }: { params: Search; companyId: strin
                     <td>
                       <AttendanceChip status={row?.status ?? "ABSENT"} />
                     </td>
+                    <td className="text-right">
+                      {row ? (
+                        <EditAttendanceModal
+                          record={{
+                            id: row.id,
+                            employeeName: `${employee.firstName} ${employee.lastName}`,
+                            checkIn: row.checkIn,
+                            checkOut: row.checkOut,
+                            status: row.status,
+                            note: row.note,
+                          }}
+                        />
+                      ) : (
+                        <span className="text-xs text-ink-300">—</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -290,6 +309,7 @@ async function MyMonth({ params, employeeId }: { params: Search; employeeId: str
   const month = parseMonth(params.month);
   const from = startOfMonth(month);
   const to = endOfMonth(month);
+  const activeDisplay = params.display ?? "table";
 
   const rows = await db.attendance.findMany({
     where: { employeeId, date: { gte: from, lt: addDays(to, 1) } },
@@ -303,9 +323,31 @@ async function MyMonth({ params, employeeId }: { params: Search; employeeId: str
 
   return (
     <>
-      <Suspense fallback={<div className="h-9 w-48 rounded-md bg-ink-100" />}>
-        <PeriodNav value={isoDay(month).slice(0, 7)} type="month" paramName="month" />
-      </Suspense>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Suspense fallback={<div className="h-9 w-48 rounded-md bg-ink-100" />}>
+          <PeriodNav value={isoDay(month).slice(0, 7)} type="month" paramName="month" />
+        </Suspense>
+
+        {/* View Toggle: Table View vs Calendar View */}
+        <div className="flex rounded-md border border-line bg-surface p-0.5 text-sm">
+          <Link
+            href={`/attendance?view=me&display=table${params.month ? `&month=${params.month}` : ""}`}
+            className={`rounded px-3 py-1.5 font-medium transition ${
+              activeDisplay === "table" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+            }`}
+          >
+            Table View
+          </Link>
+          <Link
+            href={`/attendance?view=me&display=calendar${params.month ? `&month=${params.month}` : ""}`}
+            className={`rounded px-3 py-1.5 font-medium transition ${
+              activeDisplay === "calendar" ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-brand-50"
+            }`}
+          >
+            Calendar View
+          </Link>
+        </div>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Days present" value={`${daysPresent}${halfDays ? ` + ${halfDays} half` : ""}`} tone="present" />
@@ -314,7 +356,9 @@ async function MyMonth({ params, employeeId }: { params: Search; employeeId: str
         <Stat label="Hours worked" value={formatDuration(totalMinutes)} />
       </div>
 
-      {rows.length === 0 ? (
+      {activeDisplay === "calendar" ? (
+        <EmployeeAttendanceCalendar rows={rows} />
+      ) : rows.length === 0 ? (
         <EmptyState
           title="Nothing recorded this month"
           description="Use Check In at the top of the page to start recording your day."

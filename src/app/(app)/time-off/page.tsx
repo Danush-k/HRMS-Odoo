@@ -10,6 +10,7 @@ import { RequestLeaveButton, type LeaveTypeOption } from "./request-form";
 import { AllocationForm } from "./allocation-form";
 import { TimeOffCalendarView } from "./calendar-view";
 import { HolidayManager } from "./holiday-manager";
+import { EmployeeFilterSelect } from "./employee-filter-select";
 
 export const metadata: Metadata = { title: "Time Off" };
 
@@ -17,6 +18,7 @@ type SearchParams = {
   tab?: string;
   view?: string;
   status?: string;
+  empId?: string;
   page?: string;
 };
 
@@ -29,6 +31,7 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
   const activeTab = params.tab ?? "timeoff";
   const activeView = params.view ?? "table";
   const statusFilter = params.status?.toUpperCase();
+  const selectedEmpId = params.empId;
   const page = parseInt(params.page ?? "1", 10);
   const pageSize = 20;
 
@@ -63,7 +66,9 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
   });
 
   const filterWhere = {
-    ...(manager ? { employee: { companyId: user.companyId } } : { employeeId: user.id }),
+    ...(manager
+      ? { employee: { companyId: user.companyId }, ...(selectedEmpId ? { employeeId: selectedEmpId } : {}) }
+      : { employeeId: user.id }),
     ...(statusFilter && statusFilter !== "ALL" ? { status: statusFilter } : {}),
   };
 
@@ -199,22 +204,31 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
             ))}
           </section>
 
-          {/* Status Filter Chips */}
-          <div className="flex flex-wrap gap-1.5">
-            {filters.map((value) => {
-              const active = (statusFilter ?? "ALL") === value;
-              return (
-                <Link
-                  key={value}
-                  href={`/time-off?tab=timeoff&view=${activeView}${value === "ALL" ? "" : `&status=${value.toLowerCase()}`}`}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                    active ? "bg-brand-600 text-white" : "border border-line bg-surface text-ink-600 hover:bg-brand-50"
-                  }`}
-                >
-                  {value.charAt(0) + value.slice(1).toLowerCase()}
-                </Link>
-              );
-            })}
+          {/* Status & Employee Filter Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-1.5">
+              {filters.map((value) => {
+                const active = (statusFilter ?? "ALL") === value;
+                return (
+                  <Link
+                    key={value}
+                    href={`/time-off?tab=timeoff&view=${activeView}${value === "ALL" ? "" : `&status=${value.toLowerCase()}`}${selectedEmpId ? `&empId=${selectedEmpId}` : ""}`}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      active ? "bg-brand-600 text-white" : "border border-line bg-surface text-ink-600 hover:bg-brand-50"
+                    }`}
+                  >
+                    {value.charAt(0) + value.slice(1).toLowerCase()}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {manager ? (
+              <EmployeeFilterSelect
+                employees={employeeOptions}
+                selectedEmpId={selectedEmpId}
+              />
+            ) : null}
           </div>
 
           {/* Render Calendar View or Table View */}
@@ -267,7 +281,21 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
                       <td className="num">{formatDate(request.endDate)}</td>
                       <td>
                         {request.leaveType.name}
-                        {request.attachment ? <span className="ml-2 text-[11px] text-brand-600">certificate</span> : null}
+                        {request.attachment ? (
+                          <a
+                            href={request.attachment}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-2 inline-flex items-center gap-1 rounded bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 hover:bg-brand-100 hover:underline"
+                            title="View uploaded certificate"
+                          >
+                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            View Certificate
+                          </a>
+                        ) : null}
                       </td>
                       <td className="num">{request.days}</td>
                       <td>

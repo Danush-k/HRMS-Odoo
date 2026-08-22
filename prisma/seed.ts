@@ -110,7 +110,7 @@ async function main() {
   const year = new Date().getFullYear();
   await db.leaveBalance.createMany({
     data: created.flatMap((employee) =>
-      company.leaveTypes.map((type) => ({
+      company.leaveTypes.map((type: { id: string; defaultDays: number }) => ({
         employeeId: employee.id,
         leaveTypeId: type.id,
         year,
@@ -168,8 +168,8 @@ async function main() {
 
   await db.attendance.createMany({ data: attendance });
 
-  const paid = company.leaveTypes.find((type) => type.code === "PAID")!;
-  const sick = company.leaveTypes.find((type) => type.code === "SICK")!;
+  const paid = company.leaveTypes.find((type: { code: string; id: string }) => type.code === "PAID")!;
+  const sick = company.leaveTypes.find((type: { code: string; id: string }) => type.code === "SICK")!;
   const nextWeek = new Date(today);
   nextWeek.setDate(nextWeek.getDate() + 7);
   const lastMonth = new Date(today);

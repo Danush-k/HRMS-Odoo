@@ -65,6 +65,11 @@ export async function requestLeaveAction(_prev: ActionState, form: FormData): Pr
   });
   if (!leaveType) return failure("That time off type no longer exists.");
 
+  const today = dayKey(new Date());
+  if (start < today && !isManager(actor.role) && !leaveType.requiresAttachment) {
+    return failure("Start date cannot be in the past. Select today or a future date.");
+  }
+
   // L9 — sick-leave certificate: validate, save to disk and record in Document table.
   const attachmentFile = form.get("attachmentFile");
   let fileUrl: string | null = null;

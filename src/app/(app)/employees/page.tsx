@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import type { Prisma } from "@prisma/client";
 
 import { AttendanceWidget } from "@/components/attendance-widget";
 import { SearchInput } from "@/components/search-input";
@@ -365,7 +366,7 @@ export default async function EmployeesPage({
   const pageNum = Math.max(1, parseInt(page || "1", 10) || 1);
   const pageSize = 12;
 
-  const where: any = {
+  const where: Prisma.EmployeeWhereInput = {
     companyId: user.companyId,
   };
 

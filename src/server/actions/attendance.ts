@@ -63,6 +63,9 @@ export async function checkInAction(): Promise<ActionState> {
     where: { employeeId_date: { employeeId: user.id, date: today } },
   });
 
+  if (existing?.checkIn && existing.checkOut) {
+    return failure("You have already completed attendance for today. Contact HR/Admin for corrections.");
+  }
   if (existing?.checkIn && !existing.checkOut) return failure("You are already checked in.");
   if (existing?.status === "LEAVE") return failure("You are on approved leave today.");
 
@@ -96,8 +99,18 @@ export async function checkOutAction(): Promise<ActionState> {
   if (!existing?.checkIn) return failure("Check in before checking out.");
   if (existing.checkOut) return failure("You have already checked out.");
 
+  const salary = await db.salary.findUnique({ where: { employeeId: user.id }, select: { breakHours: true } });
+
   const now = new Date();
-  const worked = existing.workedMinutes + minutesBetween(existing.checkIn, now);
+  // The configured break is time in the office that isn't work, so it comes
+  // off this session's raw span before banking it — "Worked" then means what
+  // it says, and payroll pays for the same figure it displays. Deducted once
+  // per check-in/check-out block: a day resumed after an earlier check-out
+  // loses the break again for that block, which is the right call for the
+  // ordinary one-in one-out day this is built around.
+  const rawMinutes = minutesBetween(existing.checkIn, now);
+  const netMinutes = Math.max(0, rawMinutes - (salary?.breakHours ?? 1) * 60);
+  const worked = existing.workedMinutes + netMinutes;
 
   await db.attendance.update({
     where: { id: existing.id },

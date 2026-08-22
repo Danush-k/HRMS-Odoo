@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/employees", label: "Employees" },
   { href: "/attendance", label: "Attendance" },
   { href: "/time-off", label: "Time Off" },
+  { href: "/payroll", label: "Payroll" },
 ];
 
 export function TopNav({
@@ -18,14 +19,21 @@ export function TopNav({
   user,
   checkedInSince,
   onLeaveToday,
+  isManager = false,
 }: {
   companyName: string;
   companyLogo: string | null;
   user: { name: string; loginId: string; roleLabel: string; avatar: string | null };
   checkedInSince: string | null;
   onLeaveToday: boolean;
+  isManager?: boolean;
 }) {
   const pathname = usePathname();
+
+  const links = [
+    ...LINKS,
+    ...(isManager ? [{ href: "/audit-logs", label: "Audit Logs" }] : []),
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-900/40 bg-brand-700 text-white">
@@ -43,7 +51,7 @@ export function TopNav({
         </Link>
 
         <nav className="flex items-center gap-0.5" aria-label="Main">
-          {LINKS.map((link) => {
+          {links.map((link) => {
             const active = pathname.startsWith(link.href);
             return (
               <Link
