@@ -214,6 +214,43 @@ async function main() {
     data: { used: 2 },
   });
 
+  // Seed sample documents for employees
+  const samplePdfData = "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPj4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovQ29udGVudHMgNCAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL0xlbmd0aCA0NQo+PgpzdHJlYW0KQVQKL0YxIDI0IFRmCjEwMCA3MDAgVGROCihEYXlmbG93IEhSTVMgRG9jdW1lbnQpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDE4IDAwMDAwIG4gCjAwMDAwMDAwNzcgMDAwMDAgbiAKMDAwMDAwMDEzNCAwMDAwMCBuIAowMDAwMDAwMjMwIDAwMDAwIG4gCnRyYWlsZXIKPDwKL1NpemUgNQovUm9vdCAxIDAgUgo+PgpzdGFydHhyZWYKMzI1CiUlRU9GCg==";
+
+  for (const emp of created.slice(0, 3)) {
+    await db.document.createMany({
+      data: [
+        {
+          employeeId: emp.id,
+          name: "Offer Letter",
+          type: "Employment",
+          fileData: samplePdfData,
+          fileType: "application/pdf",
+          fileSize: 45200,
+          createdAt: new Date(2026, 7, 20),
+        },
+        {
+          employeeId: emp.id,
+          name: "Joining Letter",
+          type: "Employment",
+          fileData: samplePdfData,
+          fileType: "application/pdf",
+          fileSize: 38100,
+          createdAt: new Date(2026, 7, 20),
+        },
+        {
+          employeeId: emp.id,
+          name: "Identity Document",
+          type: "Identity",
+          fileData: samplePdfData,
+          fileType: "application/pdf",
+          fileSize: 52400,
+          createdAt: new Date(2026, 7, 20),
+        },
+      ],
+    });
+  }
+
   console.log("\nSeeded Odoo India with %d employees.\n", created.length);
   console.log("  Sign in with any Login ID below and the password %s\n", DEMO_PASSWORD);
   for (const employee of created) {

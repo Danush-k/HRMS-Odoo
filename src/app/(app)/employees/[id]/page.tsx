@@ -4,12 +4,13 @@ import { notFound } from "next/navigation";
 
 import { Tabs } from "@/components/tabs";
 import { Avatar, LeaveChip } from "@/components/ui";
-import { canEditEmployee, canEditSalary, canViewPrivateInfo, canViewSalary, isManager, requireUser } from "@/lib/auth";
+import { canEditEmployee, canEditSalary, canViewDocuments, canViewPrivateInfo, canViewSalary, isManager, requireUser } from "@/lib/auth";
 import { ROLE_LABEL, type Role } from "@/lib/constants";
 import { formatDate, inputDate } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { ChangePasswordForm } from "../../profile/change-password-form";
 import { DetailsForm } from "./details-form";
+import { DocumentsSection } from "./documents-section";
 import { PrivateInfoForm } from "./private-info-form";
 import { ResumeForm } from "./resume-form";
 import { SalaryForm } from "./salary-form";
@@ -27,6 +28,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
   const canEdit = canEditEmployee(viewer, id);
   const showSalary = canViewSalary(viewer, id);
   const showPrivate = canViewPrivateInfo(viewer, id);
+  const canViewDocs = canViewDocuments(viewer, id);
 
   const employee = await db.employee.findFirst({
     where: { id, companyId: viewer.companyId },
@@ -199,6 +201,27 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
             pfPercent: salary?.pfPercent ?? 12,
             professionalTax: salary?.professionalTax ?? 200,
           }}
+        />
+      ),
+    });
+  }
+
+  if (canViewDocs) {
+    const documents = await db.document.findMany({
+      where: { employeeId: employee.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    tabs.push({
+      id: "documents",
+      label: "Documents",
+      content: (
+        <DocumentsSection
+          employeeId={employee.id}
+          isSelf={isSelf}
+          canUpload={isSelf || isManager(viewer.role)}
+          canDelete={isSelf || isManager(viewer.role)}
+          documents={documents}
         />
       ),
     });
