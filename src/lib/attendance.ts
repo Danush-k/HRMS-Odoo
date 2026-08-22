@@ -10,7 +10,6 @@ export function deriveStatus(workedMinutes: number, standardHours = STANDARD_WOR
   const hours = workedMinutes / 60;
   if (hours >= standardHours) return "PRESENT";
   if (hours >= HALF_DAY_THRESHOLD_HOURS) return "HALF_DAY";
-  if (hours > 0) return "HALF_DAY";
   return "ABSENT";
 }
 
