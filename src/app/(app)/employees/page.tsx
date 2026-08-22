@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { AttendanceWidget } from "@/components/attendance-widget";
 import { SearchInput } from "@/components/search-input";
-import { AttendanceChip, Avatar, EmptyState, LeaveChip, SubmitButton } from "@/components/ui";
+import { AttendanceChip, Avatar, EmptyState, LeaveChip } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { dayKey } from "@/lib/dates";
 import { db } from "@/lib/db";
@@ -16,9 +16,10 @@ export const metadata: Metadata = { title: "Dashboard" };
 export default async function EmployeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; denied?: string; status?: string; view?: string }>;
+  searchParams: Promise<{ q?: string; denied?: string; status?: string; view?: string; page?: string }>;
 }) {
-  const { q, denied, status = "ALL", view = "grid" } = await searchParams;
+  const searchParamsData = await searchParams;
+  const { q, denied, status = "ALL", view = "grid", page = "1" } = searchParamsData;
   const user = await requireUser();
   const isAdminOrHr = user.role === "ADMIN" || user.role === "HR";
 
@@ -292,34 +293,42 @@ export default async function EmployeesPage({
   // ADMIN / HR DASHBOARD (SRS 3.2.2)
   // ------------------------------------------------------------------------
 
-  // Fetch all company employees to compute total statistics
-  const allCompanyEmployees = await db.employee.findMany({
+  const today = dayKey(new Date());
+
+  // Fast count of total company employees
+  const totalEmployees = await db.employee.count({
     where: { companyId: user.companyId },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      jobPosition: true,
-      department: true,
-      loginId: true,
-      email: true,
-      role: true,
-      status: true,
-      avatar: true,
-      mobile: true,
-      location: true,
-    },
-    orderBy: [{ status: "asc" }, { firstName: "asc" }],
   });
 
-  // Fetch today's attendance for status calculation
-  const attendance = await db.attendance.findMany({
+  // Fetch today's attendance for status metric calculation
+  const allTodayAttendance = await db.attendance.findMany({
     where: {
-      date: dayKey(new Date()),
-      employeeId: { in: allCompanyEmployees.map((e) => e.id) },
+      date: today,
+      employee: { companyId: user.companyId },
     },
     select: { employeeId: true, status: true, checkIn: true, checkOut: true },
   });
+
+  // Calculate quick metrics for the stat summary cards
+  let inOfficeCount = 0;
+  let onLeaveCount = 0;
+
+  const statusMap = new Map<string, "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY">();
+  for (const row of allTodayAttendance) {
+    if (row.status === "LEAVE") {
+      statusMap.set(row.employeeId, "LEAVE");
+      onLeaveCount++;
+    } else if (row.checkIn && !row.checkOut) {
+      statusMap.set(row.employeeId, "PRESENT");
+      inOfficeCount++;
+    } else if (row.status === "HALF_DAY" || row.status === "PRESENT") {
+      statusMap.set(row.employeeId, row.status as "PRESENT" | "HALF_DAY");
+      inOfficeCount++;
+    } else {
+      statusMap.set(row.employeeId, "ABSENT");
+    }
+  }
+  const absentCount = Math.max(0, totalEmployees - inOfficeCount - onLeaveCount);
 
   // Fetch pending leave requests for Admin approval widget (SRS 3.2.2)
   const pendingLeaveRequests = await db.leaveRequest.findMany({
@@ -335,51 +344,101 @@ export default async function EmployeesPage({
     take: 5,
   });
 
-  const statusOf = new Map<string, "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY">(
-    allCompanyEmployees.map((emp) => {
-      const row = attendance.find((a) => a.employeeId === emp.id);
-      if (!row) return [emp.id, "ABSENT"];
-      if (row.status === "LEAVE") return [emp.id, "LEAVE"];
-      if (row.checkIn && !row.checkOut) return [emp.id, "PRESENT"];
-      return [emp.id, (row.status as "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY") || "ABSENT"];
-    })
-  );
+  // Construct database WHERE filter (P7: Full name, partial name, ID, email search)
+  const trimmedQ = (q ?? "").trim();
+  const pageNum = Math.max(1, parseInt(page || "1", 10) || 1);
+  const pageSize = 12;
 
-  // Compute metrics
-  const totalEmployees = allCompanyEmployees.length;
-  let inOfficeCount = 0;
-  let onLeaveCount = 0;
-  let absentCount = 0;
+  const where: any = {
+    companyId: user.companyId,
+  };
 
-  allCompanyEmployees.forEach((emp) => {
-    const st = statusOf.get(emp.id);
-    if (st === "PRESENT" || st === "HALF_DAY") inOfficeCount++;
-    else if (st === "LEAVE") onLeaveCount++;
-    else absentCount++;
-  });
-
-  // Filter employees based on search query `q` and status filter `status`
-  const employees = allCompanyEmployees.filter((emp) => {
-    const empStatus = statusOf.get(emp.id) || "ABSENT";
-
-    // Status filter
-    if (status === "PRESENT" && empStatus !== "PRESENT" && empStatus !== "HALF_DAY") return false;
-    if (status === "LEAVE" && empStatus !== "LEAVE") return false;
-    if (status === "ABSENT" && empStatus !== "ABSENT") return false;
-
-    // Search query filter
-    if (q) {
-      const query = q.toLowerCase();
-      const matchName = `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(query);
-      const matchPosition = emp.jobPosition?.toLowerCase().includes(query);
-      const matchDept = emp.department?.toLowerCase().includes(query);
-      const matchLogin = emp.loginId.toLowerCase().includes(query);
-      const matchEmail = emp.email.toLowerCase().includes(query);
-      return matchName || matchPosition || matchDept || matchLogin || matchEmail;
+  if (trimmedQ) {
+    const words = trimmedQ.split(/\s+/).filter(Boolean);
+    if (words.length === 1) {
+      const w = words[0];
+      where.OR = [
+        { firstName: { contains: w } },
+        { lastName: { contains: w } },
+        { loginId: { contains: w } },
+        { email: { contains: w } },
+        { jobPosition: { contains: w } },
+        { department: { contains: w } },
+      ];
+    } else {
+      const firstWord = words[0];
+      const lastWord = words.slice(1).join(" ");
+      where.OR = [
+        {
+          AND: [
+            { firstName: { contains: firstWord } },
+            { lastName: { contains: lastWord } },
+          ],
+        },
+        {
+          AND: [
+            { firstName: { contains: lastWord } },
+            { lastName: { contains: firstWord } },
+          ],
+        },
+        { firstName: { contains: trimmedQ } },
+        { lastName: { contains: trimmedQ } },
+        { loginId: { contains: trimmedQ } },
+        { email: { contains: trimmedQ } },
+        { jobPosition: { contains: trimmedQ } },
+        { department: { contains: trimmedQ } },
+      ];
     }
+  }
 
-    return true;
+  // Attendance status filter
+  if (status === "PRESENT") {
+    const presentEmpIds = Array.from(statusMap.entries())
+      .filter(([_, st]) => st === "PRESENT" || st === "HALF_DAY")
+      .map(([id]) => id);
+    where.id = { in: presentEmpIds };
+  } else if (status === "LEAVE") {
+    const leaveEmpIds = Array.from(statusMap.entries())
+      .filter(([_, st]) => st === "LEAVE")
+      .map(([id]) => id);
+    where.id = { in: leaveEmpIds };
+  } else if (status === "ABSENT") {
+    const nonAbsentEmpIds = Array.from(statusMap.entries())
+      .filter(([_, st]) => st === "PRESENT" || st === "HALF_DAY" || st === "LEAVE")
+      .map(([id]) => id);
+    where.id = { notIn: nonAbsentEmpIds };
+  }
+
+  // P6: Database-level total count and pagination calculation
+  const totalMatching = await db.employee.count({ where });
+  const totalPages = Math.max(1, Math.ceil(totalMatching / pageSize));
+  const safePage = Math.min(pageNum, totalPages);
+
+  // P5: Explicitly select only necessary fields, absolutely excluding passwordHash and sensitive personal data
+  const employees = await db.employee.findMany({
+    where,
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      jobPosition: true,
+      department: true,
+      loginId: true,
+      email: true,
+      role: true,
+      status: true,
+      avatar: true,
+      mobile: true,
+      location: true,
+    },
+    orderBy: [{ status: "asc" }, { firstName: "asc" }],
+    skip: (safePage - 1) * pageSize,
+    take: pageSize,
   });
+
+  const statusOf = new Map<string, "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY">(
+    employees.map((emp) => [emp.id, statusMap.get(emp.id) || "ABSENT"])
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -438,7 +497,7 @@ export default async function EmployeesPage({
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-present">In Office</span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-present-soft text-present">
-              <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+              <svg viewBox="0 20 20" width="18" height="18" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
               </svg>
             </div>
@@ -462,7 +521,7 @@ export default async function EmployeesPage({
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-ink-900 num">{onLeaveCount}</span>
-            <span className="text-xs text-ink-500">approved leave</span>
+            <span className="text-xs font-medium text-leave">approved leaves</span>
           </div>
         </div>
 
@@ -482,20 +541,23 @@ export default async function EmployeesPage({
         </div>
       </div>
 
-      {/* PENDING LEAVE APPROVALS WIDGET (SRS 3.2.2) */}
+      {/* Leave Approval Widget */}
       {pendingLeaveRequests.length > 0 ? (
-        <div className="card p-5 border-l-4 border-l-absent shadow-xs">
+        <div className="card p-5 border-l-4 border-l-brand-600 shadow-xs">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-ink-900 uppercase tracking-wider">Pending Leave Approvals</h2>
-              <span className="rounded-full bg-absent-soft px-2 py-0.5 text-xs font-bold text-absent">
-                {pendingLeaveRequests.length} pending
+              <h2 className="text-sm font-bold uppercase tracking-wider text-ink-900">
+                Action Required: Pending Leave Approvals
+              </h2>
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[11px] font-bold text-white">
+                {pendingLeaveRequests.length}
               </span>
             </div>
             <Link href="/time-off" className="text-xs font-semibold text-brand-600 hover:underline">
-              View All Requests →
+              View All Leaves →
             </Link>
           </div>
+
           <div className="divide-y divide-line">
             {pendingLeaveRequests.map((req) => (
               <div key={req.id} className="py-3 flex flex-wrap items-center justify-between gap-3">
@@ -583,7 +645,7 @@ export default async function EmployeesPage({
 
           <div className="flex items-center rounded-md border border-line bg-ink-100/60 p-0.5">
             <Link
-              href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "grid" }).toString()}`}
+              href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "grid", ...(page && page !== "1" ? { page } : {}) }).toString()}`}
               title="Grid View"
               className={`rounded p-1.5 transition-colors ${
                 view === "grid" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
@@ -594,7 +656,7 @@ export default async function EmployeesPage({
               </svg>
             </Link>
             <Link
-              href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "table" }).toString()}`}
+              href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "table", ...(page && page !== "1" ? { page } : {}) }).toString()}`}
               title="Table View"
               className={`rounded p-1.5 transition-colors ${
                 view === "table" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
@@ -631,180 +693,384 @@ export default async function EmployeesPage({
         />
       ) : view === "table" ? (
         /* Table View */
-        <div className="table-wrap border border-line shadow-xs">
-          <table className="grid-table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Login ID</th>
-                <th>Department & Position</th>
-                <th>Role</th>
-                <th>Today's Status</th>
-                <th className="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((emp) => {
-                const st = statusOf.get(emp.id) ?? "ABSENT";
-                return (
-                  <tr key={emp.id} className="group">
-                    <td>
-                      <Link href={`/employees/${emp.id}`} className="flex items-center gap-3">
-                        <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={36} />
-                        <div>
-                          <p className="font-semibold text-ink-900 group-hover:text-brand-600 transition-colors">
-                            {emp.firstName} {emp.lastName}
-                          </p>
-                          <p className="text-xs text-ink-400">{emp.email}</p>
-                        </div>
-                      </Link>
-                    </td>
-                    <td>
-                      <span className="mono rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 border border-brand-200">
-                        {emp.loginId}
-                      </span>
-                    </td>
-                    <td>
-                      <p className="text-xs font-medium text-ink-800">{emp.jobPosition || "—"}</p>
-                      <p className="text-[11px] text-ink-500">{emp.department || "General"}</p>
-                    </td>
-                    <td>
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                          emp.role === "ADMIN"
-                            ? "bg-purple-100 text-purple-800"
-                            : emp.role === "HR"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-ink-100 text-ink-700"
-                        }`}
-                      >
-                        {emp.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          st === "PRESENT" || st === "HALF_DAY"
-                            ? "bg-present-soft text-present"
-                            : st === "LEAVE"
-                            ? "bg-leave-soft text-leave"
-                            : "bg-absent-soft text-absent"
-                        }`}
-                      >
+        <div className="flex flex-col gap-4">
+          <div className="table-wrap border border-line shadow-xs">
+            <table className="grid-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Login ID</th>
+                  <th>Department & Position</th>
+                  <th>Role</th>
+                  <th>Employment Status</th>
+                  <th>Today's Status</th>
+                  <th className="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((emp) => {
+                  const st = statusOf.get(emp.id) ?? "ABSENT";
+                  const isActive = emp.status === "ACTIVE";
+                  return (
+                    <tr key={emp.id} className={`group ${!isActive ? "bg-ink-50/40 opacity-85" : ""}`}>
+                      <td>
+                        <Link href={`/employees/${emp.id}`} className="flex items-center gap-3">
+                          <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={36} />
+                          <div>
+                            <p className="font-semibold text-ink-900 group-hover:text-brand-600 transition-colors">
+                              {emp.firstName} {emp.lastName}
+                            </p>
+                            <p className="text-xs text-ink-400">{emp.email}</p>
+                          </div>
+                        </Link>
+                      </td>
+                      <td>
+                        <span className="mono rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 border border-brand-200">
+                          {emp.loginId}
+                        </span>
+                      </td>
+                      <td>
+                        <p className="text-xs font-medium text-ink-800">{emp.jobPosition || "—"}</p>
+                        <p className="text-[11px] text-ink-500">{emp.department || "General"}</p>
+                      </td>
+                      <td>
                         <span
-                          className={`h-2 w-2 rounded-full ${
-                            st === "PRESENT" || st === "HALF_DAY"
-                              ? "bg-present"
-                              : st === "LEAVE"
-                              ? "bg-leave"
-                              : "bg-absent"
-                          }`}
-                        />
-                        {st === "PRESENT" ? "In Office" : st === "HALF_DAY" ? "Half Day" : st === "LEAVE" ? "On Leave" : "Absent"}
-                      </span>
-                    </td>
-                    <td className="text-right">
-                      <Link
-                        href={`/employees/${emp.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800 hover:underline"
-                      >
-                        View Profile
-                        <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
-                          <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                        </svg>
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        /* Grid View */
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {employees.map((emp) => {
-            const st = statusOf.get(emp.id) ?? "ABSENT";
-            const isPresent = st === "PRESENT" || st === "HALF_DAY";
-            const isLeave = st === "LEAVE";
-
-            const borderAccent = isPresent
-              ? "border-t-present"
-              : isLeave
-              ? "border-t-leave"
-              : "border-t-absent";
-
-            return (
-              <li key={emp.id}>
-                <Link
-                  href={`/employees/${emp.id}`}
-                  className={`card group relative flex flex-col justify-between overflow-hidden border-t-4 ${borderAccent} p-4 transition-all duration-200 hover:-translate-y-1 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5 h-full`}
-                >
-                  <div>
-                    {/* Top Row: Avatar + Role Badge + Status Indicator */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="relative">
-                        <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={52} />
-                        <span
-                          className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface ${
-                            isPresent ? "bg-present" : isLeave ? "bg-leave" : "bg-absent"
-                          }`}
-                        />
-                      </div>
-
-                      <div className="flex flex-col items-end gap-1">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                             emp.role === "ADMIN"
                               ? "bg-purple-100 text-purple-800"
                               : emp.role === "HR"
                               ? "bg-blue-100 text-blue-800"
-                              : "bg-ink-100 text-ink-600"
+                              : "bg-ink-100 text-ink-700"
                           }`}
                         >
                           {emp.role}
                         </span>
-
+                      </td>
+                      <td>
+                        {/* P8: Visual Status Indicator */}
+                        {isActive ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-800 border border-orange-200">
+                            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+                      <td>
                         <span
-                          className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
-                            isPresent ? "text-present" : isLeave ? "text-leave" : "text-absent"
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            st === "PRESENT" || st === "HALF_DAY"
+                              ? "bg-present-soft text-present"
+                              : st === "LEAVE"
+                              ? "bg-leave-soft text-leave"
+                              : "bg-absent-soft text-absent"
                           }`}
                         >
-                          {isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}
+                          <span
+                            className={`h-2 w-2 rounded-full ${
+                              st === "PRESENT" || st === "HALF_DAY"
+                                ? "bg-present"
+                                : st === "LEAVE"
+                                ? "bg-leave"
+                                : "bg-absent"
+                            }`}
+                          />
+                          {st === "PRESENT" ? "In Office" : st === "HALF_DAY" ? "Half Day" : st === "LEAVE" ? "On Leave" : "Absent"}
                         </span>
+                      </td>
+                      <td className="text-right">
+                        <Link
+                          href={`/employees/${emp.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800 hover:underline"
+                        >
+                          View Profile
+                          <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                          </svg>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* P6: Pagination Controls for Table View */}
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3 text-xs shadow-2xs">
+              <p className="text-ink-500">
+                Showing <span className="font-semibold text-ink-900">{(safePage - 1) * pageSize + 1}</span> to{" "}
+                <span className="font-semibold text-ink-900">{Math.min(safePage * pageSize, totalMatching)}</span> of{" "}
+                <span className="font-semibold text-ink-900">{totalMatching}</span> employees
+              </p>
+
+              <div className="flex items-center gap-1">
+                {safePage > 1 ? (
+                  <Link
+                    href={`/employees?${new URLSearchParams({
+                      ...(q ? { q } : {}),
+                      ...(status !== "ALL" ? { status } : {}),
+                      ...(view ? { view } : {}),
+                      page: String(safePage - 1),
+                    }).toString()}`}
+                    className="btn-secondary btn-xs inline-flex items-center gap-1"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                    Previous
+                  </Link>
+                ) : (
+                  <span className="btn-secondary btn-xs opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                    Previous
+                  </span>
+                )}
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                  const isCurrent = p === safePage;
+                  return (
+                    <Link
+                      key={p}
+                      href={`/employees?${new URLSearchParams({
+                        ...(q ? { q } : {}),
+                        ...(status !== "ALL" ? { status } : {}),
+                        ...(view ? { view } : {}),
+                        page: String(p),
+                      }).toString()}`}
+                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${
+                        isCurrent
+                          ? "bg-brand-600 text-white shadow-xs"
+                          : "bg-surface text-ink-700 hover:bg-ink-100 border border-line"
+                      }`}
+                    >
+                      {p}
+                    </Link>
+                  );
+                })}
+
+                {safePage < totalPages ? (
+                  <Link
+                    href={`/employees?${new URLSearchParams({
+                      ...(q ? { q } : {}),
+                      ...(status !== "ALL" ? { status } : {}),
+                      ...(view ? { view } : {}),
+                      page: String(safePage + 1),
+                    }).toString()}`}
+                    className="btn-secondary btn-xs inline-flex items-center gap-1"
+                  >
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </Link>
+                ) : (
+                  <span className="btn-secondary btn-xs opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Grid View */
+        <div className="flex flex-col gap-5">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {employees.map((emp) => {
+              const st = statusOf.get(emp.id) ?? "ABSENT";
+              const isPresent = st === "PRESENT" || st === "HALF_DAY";
+              const isLeave = st === "LEAVE";
+              const isActive = emp.status === "ACTIVE";
+
+              const borderAccent = isPresent
+                ? "border-t-present"
+                : isLeave
+                ? "border-t-leave"
+                : "border-t-absent";
+
+              return (
+                <li key={emp.id}>
+                  <Link
+                    href={`/employees/${emp.id}`}
+                    className={`card group relative flex flex-col justify-between overflow-hidden border-t-4 ${borderAccent} ${
+                      !isActive ? "bg-orange-50/20 border-ink-300 opacity-90" : ""
+                    } p-4 transition-all duration-200 hover:-translate-y-1 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5 h-full`}
+                  >
+                    <div>
+                      {/* Top Row: Avatar + Role Badge + Active/Inactive Status Badge */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="relative">
+                          <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={52} />
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface ${
+                              isPresent ? "bg-present" : isLeave ? "bg-leave" : "bg-absent"
+                            }`}
+                            title={`Today: ${isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}`}
+                          />
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-1.5">
+                            {/* P8: Visual Status Indicator */}
+                            {isActive ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                                Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-orange-800 border border-orange-200">
+                                <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                                Inactive
+                              </span>
+                            )}
+
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                emp.role === "ADMIN"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : emp.role === "HR"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-ink-100 text-ink-600"
+                              }`}
+                            >
+                              {emp.role}
+                            </span>
+                          </div>
+
+                          <span
+                            className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+                              isPresent ? "text-present" : isLeave ? "text-leave" : "text-absent"
+                            }`}
+                          >
+                            {isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Employee Info */}
+                      <div className="mt-3">
+                        <h3 className="truncate text-base font-bold text-ink-900 group-hover:text-brand-600 transition-colors">
+                          {emp.firstName} {emp.lastName}
+                        </h3>
+                        <p className="truncate text-xs font-medium text-ink-600 mt-0.5">
+                          {emp.jobPosition || "No Position Assigned"}
+                        </p>
+                        <p className="truncate text-xs text-ink-400">
+                          {emp.department || "General Department"}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Employee Info */}
-                    <div className="mt-3">
-                      <h3 className="truncate text-base font-bold text-ink-900 group-hover:text-brand-600 transition-colors">
-                        {emp.firstName} {emp.lastName}
-                      </h3>
-                      <p className="truncate text-xs font-medium text-ink-600 mt-0.5">
-                        {emp.jobPosition || "No Position Assigned"}
-                      </p>
-                      <p className="truncate text-xs text-ink-400">
-                        {emp.department || "General Department"}
-                      </p>
+                    {/* Footer Info: Login ID & Email */}
+                    <div className="mt-4 border-t border-line/60 pt-3 flex items-center justify-between gap-2">
+                      <span className="mono rounded bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 border border-brand-200/80">
+                        {emp.loginId}
+                      </span>
+                      <span className="truncate text-[11px] text-ink-400 max-w-[130px]" title={emp.email}>
+                        {emp.email}
+                      </span>
                     </div>
-                  </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
 
-                  {/* Footer Info: Login ID & Email */}
-                  <div className="mt-4 border-t border-line/60 pt-3 flex items-center justify-between gap-2">
-                    <span className="mono rounded bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 border border-brand-200/80">
-                      {emp.loginId}
-                    </span>
-                    <span className="truncate text-[11px] text-ink-400 max-w-[130px]" title={emp.email}>
-                      {emp.email}
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+          {/* P6: Pagination Controls for Grid View */}
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3 text-xs shadow-2xs">
+              <p className="text-ink-500">
+                Showing <span className="font-semibold text-ink-900">{(safePage - 1) * pageSize + 1}</span> to{" "}
+                <span className="font-semibold text-ink-900">{Math.min(safePage * pageSize, totalMatching)}</span> of{" "}
+                <span className="font-semibold text-ink-900">{totalMatching}</span> employees
+              </p>
+
+              <div className="flex items-center gap-1">
+                {safePage > 1 ? (
+                  <Link
+                    href={`/employees?${new URLSearchParams({
+                      ...(q ? { q } : {}),
+                      ...(status !== "ALL" ? { status } : {}),
+                      ...(view ? { view } : {}),
+                      page: String(safePage - 1),
+                    }).toString()}`}
+                    className="btn-secondary btn-xs inline-flex items-center gap-1"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                    Previous
+                  </Link>
+                ) : (
+                  <span className="btn-secondary btn-xs opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                    Previous
+                  </span>
+                )}
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                  const isCurrent = p === safePage;
+                  return (
+                    <Link
+                      key={p}
+                      href={`/employees?${new URLSearchParams({
+                        ...(q ? { q } : {}),
+                        ...(status !== "ALL" ? { status } : {}),
+                        ...(view ? { view } : {}),
+                        page: String(p),
+                      }).toString()}`}
+                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${
+                        isCurrent
+                          ? "bg-brand-600 text-white shadow-xs"
+                          : "bg-surface text-ink-700 hover:bg-ink-100 border border-line"
+                      }`}
+                    >
+                      {p}
+                    </Link>
+                  );
+                })}
+
+                {safePage < totalPages ? (
+                  <Link
+                    href={`/employees?${new URLSearchParams({
+                      ...(q ? { q } : {}),
+                      ...(status !== "ALL" ? { status } : {}),
+                      ...(view ? { view } : {}),
+                      page: String(safePage + 1),
+                    }).toString()}`}
+                    className="btn-secondary btn-xs inline-flex items-center gap-1"
+                  >
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </Link>
+                ) : (
+                  <span className="btn-secondary btn-xs opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
 }
-
