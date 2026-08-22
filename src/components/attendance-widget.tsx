@@ -41,18 +41,24 @@ export function AttendanceWidget({
       {error ? <span className="hidden text-xs text-absent-soft md:inline">{error}</span> : null}
 
       {checkedInSince ? (
-        <div className="flex items-center gap-2 rounded-md border border-white/20 bg-white/10 px-2 py-1">
-          <span className="text-xs font-medium text-white/90">
-            Since {formatCheckInTime(checkedInSince)}
-          </span>
+        <div className="flex items-center gap-2.5 rounded-lg border border-white/25 bg-white/12 px-2.5 py-1 backdrop-blur-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+            <span className="text-xs font-medium text-white/95 mono">
+              Since {formatCheckInTime(checkedInSince)}
+            </span>
+          </div>
           <button
             type="button"
             suppressHydrationWarning
             onClick={() => setShowConfirmModal(true)}
             disabled={pending}
-            className="rounded bg-white px-2.5 py-1 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 disabled:opacity-60"
+            className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-brand-700 shadow-2xs transition hover:bg-brand-50 active:scale-95 disabled:opacity-60"
           >
-            Check Out →
+            Check Out
           </button>
         </div>
       ) : (
@@ -61,25 +67,41 @@ export function AttendanceWidget({
           suppressHydrationWarning
           onClick={() => run(checkInAction)}
           disabled={pending}
-          className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-700 shadow-2xs transition hover:bg-brand-50 active:scale-95 disabled:opacity-60"
         >
-          {pending ? "Checking in…" : "Check IN →"}
+          <span className="h-2 w-2 rounded-full bg-emerald-600" />
+          <span>{pending ? "Checking in…" : "Check In"}</span>
         </button>
       )}
 
-      {/* Checkout Confirmation Modal */}
+      {/* Checkout Confirmation Centered Modal */}
       {showConfirmModal ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-brand-900/40 p-4 backdrop-blur-[2px]">
-          <div className="w-full max-w-sm rounded-lg border border-line bg-surface p-5 text-ink-900 shadow-xl">
-            <h3 className="text-base font-semibold">Confirm Check Out</h3>
-            <p className="mt-2 text-sm text-ink-600">
-              Are you sure you want to check out for today? This will finalize your attendance record.
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-ink-900/50 backdrop-blur-[3px] transition-opacity animate-in fade-in duration-150"
+            onClick={() => !pending && setShowConfirmModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-line bg-surface p-5 text-ink-900 shadow-2xl shadow-ink-900/25 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-danger-soft text-danger border border-danger/20">
+                <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-ink-900">Confirm Check Out</h3>
+                <p className="text-xs text-ink-500 mt-0.5">End your work session for today</p>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-ink-600 leading-relaxed">
+              Are you sure you want to check out now? This will finalize your daily attendance record and calculate your total worked hours.
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="btn-secondary btn-sm"
+                disabled={pending}
+                className="btn-secondary btn-sm rounded-lg"
               >
                 Cancel
               </button>
@@ -87,7 +109,7 @@ export function AttendanceWidget({
                 type="button"
                 onClick={() => run(checkOutAction)}
                 disabled={pending}
-                className="btn-primary btn-sm bg-danger text-white hover:bg-danger/90"
+                className="btn-danger btn-sm rounded-lg"
               >
                 {pending ? "Checking out…" : "Confirm Check Out"}
               </button>

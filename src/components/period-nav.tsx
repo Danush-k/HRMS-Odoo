@@ -71,20 +71,23 @@ export function PeriodNav({
   return (
     <div className="relative inline-flex items-center">
       {toastMessage ? (
-        <div className="absolute left-0 bottom-full mb-2 z-50 whitespace-nowrap rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg animate-in fade-in zoom-in-95">
-          ⚠️ {toastMessage}
+        <div className="absolute left-0 bottom-full mb-2 z-50 flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-ink-900 px-3 py-1.5 text-xs font-semibold text-white shadow-xl animate-in fade-in zoom-in-95">
+          <svg viewBox="0 0 20 20" width="14" height="14" fill="#FFC145">
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          </svg>
+          <span>{toastMessage}</span>
         </div>
       ) : null}
 
-      <div className="inline-flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-xs">
+      <div className="inline-flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-2xs">
         <button
           type="button"
           onClick={() => step(-1)}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-600 transition hover:bg-brand-50 hover:text-brand-700 active:scale-95"
           aria-label="Previous period"
         >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+            <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
           </svg>
         </button>
 
@@ -92,7 +95,7 @@ export function PeriodNav({
           type={type}
           value={value}
           onChange={(event) => event.target.value && go(event.target.value)}
-          className="field font-semibold text-center py-1 px-3 text-xs border-0 bg-transparent text-ink-900 shadow-none focus:ring-0 focus:outline-none cursor-pointer"
+          className="field font-semibold mono text-center py-1 px-3 text-xs border-0 bg-transparent text-ink-900 shadow-none focus:ring-0 focus:outline-none cursor-pointer"
           aria-label={type === "date" ? "Choose a day" : "Choose a month"}
         />
 
@@ -102,8 +105,8 @@ export function PeriodNav({
           className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-600 transition hover:bg-brand-50 hover:text-brand-700 active:scale-95"
           aria-label="Next period"
         >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
           </svg>
         </button>
       </div>
