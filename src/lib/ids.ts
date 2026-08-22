@@ -1,3 +1,5 @@
+import { randomInt } from "node:crypto";
+
 import type { PrismaClient } from "@prisma/client";
 
 const ALPHA = /[^A-Z]/g;
@@ -72,15 +74,26 @@ export async function generateLoginId(
   return loginId;
 }
 
+// Ambiguous characters are left out so the password survives being read aloud
+// or copied off a screen: no O/0, no I/l/1.
 const PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
 
 /**
  * First-time password issued by the system. The employee is forced to replace it
  * on first sign-in, so it only has to survive one handover.
+ *
+ * Uses node:crypto rather than the global Web Crypto object, which is only
+ * guaranteed from Node 19, and randomInt rather than a modulo of random bytes,
+ * which would bias the first few characters of the alphabet.
  */
 export function generateTemporaryPassword(length = 10) {
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  const body = Array.from(bytes, (b) => PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length]).join("");
+  const body = Array.from({ length }, () => PASSWORD_ALPHABET[randomInt(PASSWORD_ALPHABET.length)]).join("");
   return `${body}@1`;
+}
+
+/** URL-safe random token for verification and password reset links. */
+export function generateToken(bytes = 32) {
+  return Array.from({ length: bytes }, () => randomInt(256))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }

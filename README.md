@@ -44,6 +44,8 @@ done and keeps your data.
 
 Use another port with `PORT=3001 ./run.sh`.
 
+Dayflow needs **Node 18.18 or newer**.
+
 Or do it by hand:
 
 ```bash

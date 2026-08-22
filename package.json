@@ -2,7 +2,10 @@
   "name": "dayflow-hrms",
   "version": "1.0.0",
   "private": true,
-  "description": "Dayflow — Human Resource Management System",
+  "description": "Dayflow \u2014 Human Resource Management System",
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
