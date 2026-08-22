@@ -90,8 +90,7 @@ export async function createEmployeeAction(_prev: ActionState, form: FormData): 
 
   revalidatePath("/employees");
   return success(
-    `${employee.firstName} ${employee.lastName} added.${
-      delivered ? " A confirmation email is on its way to them." : ""
+    `${employee.firstName} ${employee.lastName} added.${delivered ? " A confirmation email is on its way to them." : ""
     }`,
     `Login ID ${loginId} · temporary password ${temporaryPassword} — share these once, they are not shown again.`,
   );
