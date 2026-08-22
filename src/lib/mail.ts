@@ -47,13 +47,13 @@ function render(mail: Mail) {
 </body></html>`;
 }
 
-function logToConsole(mail: Mail) {
+function logToConsole(mail: Mail, reason = "RESEND_API_KEY is not configured") {
   const rule = "─".repeat(72);
   console.info(
     [
       "",
       rule,
-      "  EMAIL (not sent — RESEND_API_KEY is not configured)",
+      `  EMAIL (${reason})`,
       `  To:      ${mail.to}`,
       `  Subject: ${mail.subject}`,
       "",
@@ -66,10 +66,10 @@ function logToConsole(mail: Mail) {
 }
 
 export async function sendMail(mail: Mail) {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = env.RESEND_API_KEY || process.env.RESEND_API_KEY;
 
   if (!apiKey) {
-    logToConsole(mail);
+    logToConsole(mail, "not sent — RESEND_API_KEY is not configured");
     return { delivered: false as const, reason: "no-provider" as const };
   }
 
@@ -82,7 +82,7 @@ export async function sendMail(mail: Mail) {
         Connection: "close",
       },
       body: JSON.stringify({
-        from: process.env.MAIL_FROM ?? "Dayflow <onboarding@resend.dev>",
+        from: env.MAIL_FROM || process.env.MAIL_FROM || "Dayflow <onboarding@resend.dev>",
         to: [mail.to],
         subject: mail.subject,
         html: render(mail),
@@ -92,14 +92,14 @@ export async function sendMail(mail: Mail) {
     if (!response.ok) {
       const errText = await response.text();
       console.error("Mail delivery failed:", response.status, errText);
-      logToConsole(mail);
+      logToConsole(mail, `provider error ${response.status} — console fallback`);
       return { delivered: false as const, reason: "provider-error" as const };
     }
 
     return { delivered: true as const, reason: null };
   } catch (error) {
-    console.error("Mail network socket reset (ECONNRESET): Falling back to console log.");
-    logToConsole(mail);
+    console.error("Mail delivery network error (ECONNRESET): Falling back to console log.");
+    logToConsole(mail, "network error ECONNRESET — console link fallback");
     return { delivered: false as const, reason: "provider-error" as const };
   }
 }
