@@ -38,7 +38,12 @@ export async function getCurrentUser() {
   // A session older than the cut-off was issued before a password change or an
   // explicit revocation. Compared at second precision because that is all the
   // JWT issued-at claim carries.
-  if (Math.floor(employee.sessionsValidFrom.getTime() / 1000) > session.issuedAt) return null;
+  if (
+    employee.sessionsValidFrom &&
+    Math.floor(employee.sessionsValidFrom.getTime() / 1000) > session.issuedAt
+  ) {
+    return null;
+  }
 
   return { ...employee, role: employee.role as Role };
 }
