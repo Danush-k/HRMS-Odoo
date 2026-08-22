@@ -11,17 +11,23 @@ export function SubmitButton({
   className = "btn-primary",
   pendingLabel,
   disabled = false,
+  form,
+  onClick,
 }: {
   children: ReactNode;
   className?: string;
   pendingLabel?: string;
   /** For a client-side check that must block submission even before the pending state exists. */
   disabled?: boolean;
+  form?: string;
+  onClick?: () => void;
 }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
+      form={form}
+      onClick={onClick}
       className={className}
       disabled={pending || disabled}
       aria-busy={pending}

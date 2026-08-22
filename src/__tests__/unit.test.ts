@@ -96,6 +96,61 @@ describe("Resume Text Parser", () => {
     expect(parsed.interests).toContain("Cricket");
     expect(parsed.loveAboutJob).toContain("passionate about solving complex workflow problems");
   });
+
+  it("handles category-prefixed, parenthetical, and pipe-delimited skill lists", async () => {
+    const { parseResumeText } = await import("../lib/resume-parser");
+
+    const resumeWithCategories = `
+    Alex Rivera
+    Senior Full Stack Engineer
+
+    TECHNICAL SKILLS
+    • Programming Languages: Python, JavaScript, TypeScript, Java, SQL
+    • Frameworks & Libraries: React.js, Next.js, Django, FastAPI (REST APIs), Tailwind CSS
+    • Databases & Cloud: PostgreSQL, MongoDB, Redis, AWS (S3, EC2), Docker, Kubernetes
+    • Tools & Practices: Git, GitHub Actions, CI/CD, Agile, Postman, Linux
+
+    EXPERIENCE
+    Software Engineer at TechCorp
+    `;
+
+    const parsed = parseResumeText(resumeWithCategories);
+
+    expect(parsed.skills).toContain("Python");
+    expect(parsed.skills).toContain("JavaScript");
+    expect(parsed.skills).toContain("TypeScript");
+    expect(parsed.skills).toContain("React");
+    expect(parsed.skills).toContain("Next.js");
+    expect(parsed.skills).toContain("Django");
+    expect(parsed.skills).toContain("FastAPI");
+    expect(parsed.skills).toContain("REST APIs");
+    expect(parsed.skills).toContain("PostgreSQL");
+    expect(parsed.skills).toContain("MongoDB");
+    expect(parsed.skills).toContain("Docker");
+    expect(parsed.skills).toContain("Kubernetes");
+    expect(parsed.skills).toContain("Git");
+    expect(parsed.skills).toContain("CI/CD");
+  });
+
+  it("handles inline headers like 'SKILLS: Python, TypeScript, React'", async () => {
+    const { parseResumeText } = await import("../lib/resume-parser");
+
+    const resumeInline = `
+    John Doe
+    SKILLS: Python, TypeScript, React, Next.js, Odoo, PostgreSQL, Docker, Git
+    `;
+
+    const parsed = parseResumeText(resumeInline);
+
+    expect(parsed.skills).toContain("Python");
+    expect(parsed.skills).toContain("TypeScript");
+    expect(parsed.skills).toContain("React");
+    expect(parsed.skills).toContain("Next.js");
+    expect(parsed.skills).toContain("Odoo");
+    expect(parsed.skills).toContain("PostgreSQL");
+    expect(parsed.skills).toContain("Docker");
+    expect(parsed.skills).toContain("Git");
+  });
 });
 
 describe("Employee Profile Navigation Metadata", () => {
