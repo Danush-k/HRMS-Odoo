@@ -4,15 +4,38 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { requireUser } from "@/lib/auth";
+import { requireUser, revokeSessions } from "@/lib/auth";
 import { DEFAULT_LEAVE_TYPES } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { generateLoginId, uniqueCompanyCode } from "@/lib/ids";
+import { generateLoginId, generateToken, uniqueCompanyCode } from "@/lib/ids";
+import { checkLockout, clientIp, lockoutMessage, recordAttempt } from "@/lib/rate-limit";
 import { createSession, destroySession } from "@/lib/session";
+import { sendVerificationEmail } from "@/lib/verification";
 import { changePasswordSchema, fieldErrors, signInSchema, signUpSchema } from "@/lib/validations";
 import { failure, success, type ActionState } from "@/lib/action-state";
 
 const read = (form: FormData, key: string) => (form.get(key) as string | null) ?? undefined;
+
+/**
+ * A real bcrypt hash of a value nobody can supply, compared against when no
+ * account matches. Comparing against a malformed hash returns in microseconds
+ * while a genuine comparison costs tens of milliseconds, and that gap is enough
+ * to enumerate valid Login IDs by response time alone.
+ */
+const ABSENT_ACCOUNT_HASH = bcrypt.hashSync(generateToken(16), 10);
+
+/**
+ * Confines a post-sign-in redirect to this application. Anything that is not a
+ * plain absolute path falls back, so "//evil.example", "https://evil.example"
+ * and "/\evil.example" cannot turn the sign-in form into an open redirect.
+ */
+function safeRedirect(target: string | undefined, fallback = "/employees") {
+  if (!target) return fallback;
+  if (!target.startsWith("/")) return fallback;
+  if (target.startsWith("//") || target.startsWith("/\\")) return fallback;
+  if (target.startsWith("/sign-in") || target.startsWith("/sign-up")) return fallback;
+  return target;
+}
 
 /**
  * Registers a company and its first administrator.
@@ -87,6 +110,8 @@ export async function signUpAction(_prev: ActionState, form: FormData): Promise<
     })),
   });
 
+  await sendVerificationEmail(admin, { newAccount: true });
+
   await createSession({
     employeeId: admin.id,
     companyId: company.id,
@@ -94,10 +119,12 @@ export async function signUpAction(_prev: ActionState, form: FormData): Promise<
     loginId: admin.loginId,
   });
 
-  redirect("/employees");
+  redirect("/verify-email");
 }
 
 export async function signInAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const destination = safeRedirect(read(form, "next"));
+
   const parsed = signInSchema.safeParse({
     identifier: read(form, "identifier"),
     password: read(form, "password"),
@@ -105,6 +132,12 @@ export async function signInAction(_prev: ActionState, form: FormData): Promise<
 
   if (!parsed.success) return failure("Check the highlighted fields.", fieldErrors(parsed.error));
   const { identifier, password } = parsed.data;
+  const ip = await clientIp();
+
+  // Checked before the password, so a locked account costs an attacker a round
+  // trip and nothing else.
+  const lockout = await checkLockout(identifier, ip);
+  if (lockout.locked) return failure(lockoutMessage(lockout));
 
   const employee = await db.employee.findFirst({
     where: {
@@ -112,16 +145,22 @@ export async function signInAction(_prev: ActionState, form: FormData): Promise<
     },
   });
 
-  // One message for both branches so the form cannot be used to discover valid accounts.
-  const invalid = failure("Incorrect Login ID or password.");
-  if (!employee) {
-    await bcrypt.compare(password, "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinv");
-    return invalid;
+  // One message for both branches so the form cannot be used to discover valid
+  // accounts, and one comparison either way so the timing cannot either.
+  const matches = await bcrypt.compare(password, employee?.passwordHash ?? ABSENT_ACCOUNT_HASH);
+
+  if (!employee || !matches) {
+    await recordAttempt(identifier, ip, false);
+    const now = await checkLockout(identifier, ip);
+    return failure(now.locked ? lockoutMessage(now) : "Incorrect Login ID or password.");
   }
-  if (!(await bcrypt.compare(password, employee.passwordHash))) return invalid;
+
   if (employee.status !== "ACTIVE") {
+    await recordAttempt(identifier, ip, false);
     return failure("This account is inactive. Contact your HR officer.");
   }
+
+  await recordAttempt(identifier, ip, true);
 
   await createSession({
     employeeId: employee.id,
@@ -130,7 +169,7 @@ export async function signInAction(_prev: ActionState, form: FormData): Promise<
     loginId: employee.loginId,
   });
 
-  redirect(employee.mustChangePassword ? "/first-login" : "/employees");
+  redirect(employee.mustChangePassword ? "/first-login" : destination);
 }
 
 export async function signOutAction() {
@@ -169,6 +208,16 @@ export async function changePasswordAction(_prev: ActionState, form: FormData): 
     },
   });
 
+  // Every other device is signed out, then this one is given a fresh session so
+  // the person changing the password is not signed out by their own action.
+  await revokeSessions(user.id);
+  await createSession({
+    employeeId: user.id,
+    companyId: user.companyId,
+    role: user.role,
+    loginId: user.loginId,
+  });
+
   revalidatePath("/profile");
-  return success("Password updated.");
+  return success("Password updated. Any other device signed in as you has been signed out.");
 }

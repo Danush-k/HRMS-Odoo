@@ -1,18 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import { idle } from "@/lib/action-state";
 import { signInAction } from "@/server/actions/auth";
 import { Field, FormMessage, Input, SubmitButton } from "@/components/ui";
 
-export function SignInForm() {
+export function SignInForm({ next }: { next?: string }) {
   const [state, action] = useActionState(signInAction, idle);
   const [reveal, setReveal] = useState(false);
 
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       <FormMessage state={state} />
+      {next ? <input type="hidden" name="next" value={next} /> : null}
 
       <Field label="Login ID / Email" name="identifier" error={state.errors?.identifier} required>
         <Input name="identifier" autoComplete="username" placeholder="OIJODO20220001" error={state.errors?.identifier} />
@@ -40,6 +42,10 @@ export function SignInForm() {
       <SubmitButton className="btn-primary mt-1 w-full" pendingLabel="Signing in…">
         Sign In
       </SubmitButton>
+
+      <Link href="/forgot-password" className="self-center text-sm font-medium text-brand-600 hover:underline">
+        Forgot your password?
+      </Link>
     </form>
   );
 }

@@ -4,6 +4,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
 import type { Role } from "./constants";
+import { env } from "./env";
 
 const COOKIE_NAME = "dayflow_session";
 const MAX_AGE_SECONDS = 60 * 60 * 8; // one working day
@@ -15,12 +16,13 @@ export type SessionPayload = {
   loginId: string;
 };
 
+/** A verified session, carrying the JWT's issued-at claim in seconds. */
+export type VerifiedSession = SessionPayload & { issuedAt: number };
+
+const key = new TextEncoder().encode(env.SESSION_SECRET);
+
 function secret() {
-  const value = process.env.SESSION_SECRET;
-  if (!value) {
-    throw new Error("SESSION_SECRET is not set. Copy .env.example to .env and fill it in.");
-  }
-  return new TextEncoder().encode(value);
+  return key;
 }
 
 export async function createSession(payload: SessionPayload) {
@@ -33,20 +35,21 @@ export async function createSession(payload: SessionPayload) {
   const store = await cookies();
   store.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: MAX_AGE_SECONDS,
   });
 }
 
-export async function readSession(): Promise<SessionPayload | null> {
+export async function readSession(): Promise<VerifiedSession | null> {
   const token = (await cookies()).get(COOKIE_NAME)?.value;
   if (!token) return null;
 
   try {
     const { payload } = await jwtVerify(token, secret());
-    return payload as unknown as SessionPayload;
+    const claims = payload as unknown as SessionPayload & { iat?: number };
+    return { ...claims, issuedAt: claims.iat ?? 0 };
   } catch {
     return null;
   }

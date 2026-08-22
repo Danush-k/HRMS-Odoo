@@ -13,6 +13,7 @@ import { DetailsForm } from "./details-form";
 import { DocumentsSection } from "./documents-section";
 import { PrivateInfoForm } from "./private-info-form";
 import { ResumeForm } from "./resume-form";
+import { ResetPasswordPanel } from "./reset-password-panel";
 import { SalaryForm } from "./salary-form";
 
 export const metadata: Metadata = { title: "Employee" };
@@ -37,6 +38,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
       companyId: true,
       loginId: true,
       email: true,
+      emailVerifiedAt: true,
       role: true,
       status: true,
       firstName: true,
@@ -227,17 +229,29 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
     });
   }
 
-  if (isSelf) {
+  if (isSelf || managerView) {
     tabs.push({
       id: "security",
       label: "Security",
       content: (
         <div className="card p-5 sm:p-6">
-          <p className="section-title">Change your password</p>
+          <p className="section-title">{isSelf ? "Change your password" : "Reset this password"}</p>
           <p className="hint mt-1 mb-5">
-            Signed in as <span className="mono font-semibold text-brand-700">{employee.loginId}</span>
+            <span className="mono font-semibold text-brand-700">{employee.loginId}</span>
+            {employee.emailVerifiedAt ? (
+              <span className="ml-2 text-present">Email confirmed</span>
+            ) : (
+              <span className="ml-2 text-absent">Email not yet confirmed</span>
+            )}
           </p>
-          <ChangePasswordForm />
+          {isSelf ? (
+            <ChangePasswordForm />
+          ) : (
+            <ResetPasswordPanel
+              employeeId={employee.id}
+              employeeName={`${employee.firstName} ${employee.lastName}`}
+            />
+          )}
         </div>
       ),
     });
