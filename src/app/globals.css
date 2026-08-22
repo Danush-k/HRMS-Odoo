@@ -125,11 +125,11 @@ body {
   }
 
   .btn-danger {
-    @apply btn bg-danger text-white hover:brightness-90;
+    @apply btn border border-danger/30 bg-danger-soft text-danger hover:border-danger hover:bg-danger hover:text-white shadow-2xs;
   }
 
   .btn-approve {
-    @apply btn bg-present text-white hover:brightness-90;
+    @apply btn border border-present/30 bg-present-soft text-present hover:border-present hover:bg-present hover:text-white shadow-2xs;
   }
 
   .btn-sm {
