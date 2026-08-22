@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { DEFAULT_LEAVE_TYPES } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { generateLoginId, generateToken, uniqueCompanyCode } from "@/lib/ids";
+import { checkLockout, clientIp, lockoutMessage, recordAttempt } from "@/lib/rate-limit";
 import { createSession, destroySession } from "@/lib/session";
 import { changePasswordSchema, fieldErrors, signInSchema, signUpSchema } from "@/lib/validations";
 import { failure, success, type ActionState } from "@/lib/action-state";
@@ -128,6 +129,12 @@ export async function signInAction(_prev: ActionState, form: FormData): Promise<
 
   if (!parsed.success) return failure("Check the highlighted fields.", fieldErrors(parsed.error));
   const { identifier, password } = parsed.data;
+  const ip = await clientIp();
+
+  // Checked before the password, so a locked account costs an attacker a round
+  // trip and nothing else.
+  const lockout = await checkLockout(identifier, ip);
+  if (lockout.locked) return failure(lockoutMessage(lockout));
 
   const employee = await db.employee.findFirst({
     where: {
@@ -137,12 +144,20 @@ export async function signInAction(_prev: ActionState, form: FormData): Promise<
 
   // One message for both branches so the form cannot be used to discover valid
   // accounts, and one comparison either way so the timing cannot either.
-  const invalid = failure("Incorrect Login ID or password.");
   const matches = await bcrypt.compare(password, employee?.passwordHash ?? ABSENT_ACCOUNT_HASH);
-  if (!employee || !matches) return invalid;
+
+  if (!employee || !matches) {
+    await recordAttempt(identifier, ip, false);
+    const now = await checkLockout(identifier, ip);
+    return failure(now.locked ? lockoutMessage(now) : "Incorrect Login ID or password.");
+  }
+
   if (employee.status !== "ACTIVE") {
+    await recordAttempt(identifier, ip, false);
     return failure("This account is inactive. Contact your HR officer.");
   }
+
+  await recordAttempt(identifier, ip, true);
 
   await createSession({
     employeeId: employee.id,

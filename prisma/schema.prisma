@@ -182,3 +182,16 @@ model Attendance {
   @@unique([employeeId, date])
   @@index([date])
 }
+
+/// One row per sign-in attempt, successful or not. Backs the rate limit and
+/// gives HR a trail when an account is being probed.
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  identifier String
+  ip         String?
+  successful Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([identifier, createdAt])
+  @@index([ip, createdAt])
+}
