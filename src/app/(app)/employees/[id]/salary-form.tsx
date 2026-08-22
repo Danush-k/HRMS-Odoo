@@ -177,6 +177,7 @@ export function SalaryForm({
                 width="w-20"
               />
             </label>
+            <p className="hint -mt-1">Deducted from clocked time before it counts as hours worked.</p>
           </div>
 
           <div className="card flex flex-col gap-4 p-5">
