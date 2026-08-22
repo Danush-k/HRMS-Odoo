@@ -11,8 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   // Order matters: replace the system-issued password first, then confirm the
   // address (SRS 3.1.1). Both gates live here so no page can forget one.
-  // Email verification check temporarily disabled for seamless navigation
-  // if (!user.emailVerifiedAt) redirect("/verify-email");
+  if (!user.emailVerifiedAt) redirect("/verify-email");
 
   const today = await db.attendance.findUnique({
     where: { employeeId_date: { employeeId: user.id, date: dayKey(new Date()) } },

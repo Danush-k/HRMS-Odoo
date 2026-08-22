@@ -18,18 +18,31 @@ export function ChangePasswordForm({ redirectTo }: { redirectTo?: string }) {
   const [revealCurrent, setRevealCurrent] = useState(false);
   const [revealNew, setRevealNew] = useState(false);
   const [revealConfirm, setRevealConfirm] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     if (state.ok) {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      if (redirectTo) router.replace(redirectTo);
+      if (redirectTo) {
+        setIsRedirecting(true);
+        window.location.href = redirectTo;
+      }
     }
-  }, [state.ok, redirectTo, router]);
+  }, [state.ok, redirectTo]);
 
   return (
     <form action={action} className="flex max-w-md flex-col gap-4">
+      {isRedirecting && (
+        <div className="flex items-center gap-3 rounded-lg border border-brand-200 bg-brand-50 p-3.5 text-xs font-semibold text-brand-800 animate-pulse">
+          <svg className="h-4 w-4 animate-spin text-brand-600" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
+          <span>Password updated successfully! Entering dashboard…</span>
+        </div>
+      )}
       <FormMessage state={state} />
 
       <Field label="Current Password" name="currentPassword" error={state.errors?.currentPassword} required>
