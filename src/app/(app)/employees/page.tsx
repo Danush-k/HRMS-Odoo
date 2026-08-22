@@ -495,10 +495,10 @@ export default async function EmployeesPage({
 
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div className="card relative overflow-hidden p-4 transition-all hover:border-ink-300 shadow-xs">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-brand-300 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">Total Team</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
                 <path d="M7 8a3 3 0 100-6 3 3 0 000 6zM14.5 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1.615 16.428a1.224 1.224 0 01-.569-1.175 6.002 6.002 0 0111.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 017 17a9.953 9.953 0 01-5.385-.572zM14.5 16h-.187.002c.322-.452.544-.96.643-1.5a4.5 4.5 0 00-7.858-3.003c.277-.04.558-.06.843-.06a7.5 7.5 0 016.92 4.563h-.363z" />
               </svg>
@@ -510,10 +510,10 @@ export default async function EmployeesPage({
           </div>
         </div>
 
-        <div className="card relative overflow-hidden p-4 transition-all hover:border-present/40 shadow-xs">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-brand-300 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-present">In Office</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-present-soft text-present">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">In Office</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               <svg viewBox="0 20 20" width="18" height="18" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
               </svg>
@@ -521,16 +521,16 @@ export default async function EmployeesPage({
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-ink-900 num">{inOfficeCount}</span>
-            <span className="text-xs font-medium text-present">
+            <span className="text-xs font-medium text-ink-500">
               {totalEmployees ? Math.round((inOfficeCount / totalEmployees) * 100) : 0}% present
             </span>
           </div>
         </div>
 
-        <div className="card relative overflow-hidden p-4 transition-all hover:border-leave/40 shadow-xs">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-brand-300 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-leave">On Leave</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-leave-soft text-leave">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">On Leave</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" />
               </svg>
@@ -538,14 +538,14 @@ export default async function EmployeesPage({
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-ink-900 num">{onLeaveCount}</span>
-            <span className="text-xs font-medium text-leave">approved leaves</span>
+            <span className="text-xs font-medium text-ink-500">approved leaves</span>
           </div>
         </div>
 
-        <div className="card relative overflow-hidden p-4 transition-all hover:border-absent/40 shadow-xs">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-brand-300 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-absent">Absent</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-absent-soft text-absent">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">Absent</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
               </svg>
