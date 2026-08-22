@@ -135,12 +135,12 @@ export function SalaryForm({
   };
 
   const applyHike = (percent: number) => {
-    const nextWage = round2(values.monthlyWage * (1 + percent / 100));
+    const nextWage = Math.round(values.monthlyWage * (1 + percent / 100));
     setValues((current) => ({ ...current, monthlyWage: nextWage }));
   };
 
   const handleAnnualChange = (annual: number) => {
-    const monthly = round2(annual / 12);
+    const monthly = Math.round(annual / 12);
     setValues((current) => ({ ...current, monthlyWage: Math.max(0, monthly) }));
   };
 
@@ -210,6 +210,7 @@ export function SalaryForm({
                   disabled={!canEdit}
                   suffix="/ month"
                   width="w-36"
+                  step="any"
                 />
               </label>
 
@@ -218,9 +219,9 @@ export function SalaryForm({
                   <span className="text-xs text-ink-500">Annual Gross:</span>
                   <input
                     type="number"
-                    step="100"
+                    step="any"
                     min="0"
-                    value={round2(values.monthlyWage * 12)}
+                    value={Math.round(values.monthlyWage * 12)}
                     onChange={(e) => handleAnnualChange(Number(e.target.value))}
                     disabled={!canEdit}
                     className="field mono w-32 py-1.5 text-right text-xs"
