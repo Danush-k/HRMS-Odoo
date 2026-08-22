@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { DayflowLogoMark } from "./brand-icons";
 import { AttendanceWidget } from "./attendance-widget";
 import { UserMenu } from "./user-menu";
 
@@ -39,12 +38,14 @@ export function TopNav({
   return (
     <header className="sticky top-0 z-40 border-b border-brand-900/40 bg-brand-700 text-white">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-1 px-4 sm:px-6">
-        <Link href="/employees" className="mr-3 flex shrink-0 items-center gap-2.5">
+        <Link href="/employees" className="mr-3 flex shrink-0 items-center gap-2">
           {companyLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={companyLogo} alt="" className="h-7 w-7 rounded-lg object-cover shadow-2xs" />
           ) : (
-            <DayflowLogoMark size={28} className="rounded-lg shadow-2xs shrink-0" />
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-white/15 text-xs font-bold">
+              {companyName.slice(0, 1).toUpperCase()}
+            </span>
           )}
           <span className="hidden max-w-[180px] truncate text-sm font-bold tracking-tight sm:block">{companyName}</span>
         </Link>
