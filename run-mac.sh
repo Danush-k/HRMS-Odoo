@@ -76,9 +76,22 @@ check_port() {
   read -r reply
   case "$reply" in
     [yY]*)
+      # A suspended (Ctrl+Z) process is stopped, not dead: it still holds the
+      # port and SIGTERM is never processed while it is stopped, so a plain
+      # kill can silently fail. Wake it, ask nicely, then insist.
+      kill -CONT "$holder" 2>/dev/null || true
       kill "$holder" 2>/dev/null || true
-      sleep 1
-      ok "Port $PORT is free"
+      for _ in 1 2 3 4 5; do
+        lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t >/dev/null 2>&1 || break
+        sleep 1
+      done
+      if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t >/dev/null 2>&1; then
+        kill -9 "$holder" 2>/dev/null || true
+        sleep 1
+      fi
+      lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t >/dev/null 2>&1 \
+        && die "Could not free port $PORT. Close whatever is using it and try again." \
+        || ok "Port $PORT is free"
       ;;
     *) die "Port $PORT is busy. Start on another port with: PORT=3001 ./run-mac.sh" ;;
   esac
