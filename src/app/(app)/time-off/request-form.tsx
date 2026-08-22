@@ -17,31 +17,42 @@ export type LeaveTypeOption = {
 
 const today = new Date().toISOString().slice(0, 10);
 
-/** Weekdays only — weekends never consume a leave balance. */
-function workingDaysBetween(start: string, end: string) {
+/**
+ * Working days only — weekends never consume a leave balance, and neither do
+ * company public holidays (L10), which arrive here as "yyyy-MM-dd" strings.
+ */
+function workingDaysBetween(start: string, end: string, publicHolidays: string[] = []) {
   if (!start || !end) return 0;
   const from = new Date(`${start}T00:00:00`);
   const to = new Date(`${end}T00:00:00`);
   if (to < from) return 0;
 
+  const holidaySet = new Set(publicHolidays);
   let count = 0;
   for (const cursor = new Date(from); cursor <= to; cursor.setDate(cursor.getDate() + 1)) {
     const day = cursor.getDay();
-    if (day !== 0 && day !== 6) count += 1;
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+    if (day !== 0 && day !== 6 && !holidaySet.has(key)) count += 1;
   }
   return count;
 }
+
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ACCEPTED_TYPES = ["image/png", "image/jpeg", "application/pdf"];
 
 export function RequestLeaveButton({
   leaveTypes,
   employees,
   defaultEmployeeId,
   canFileForOthers,
+  publicHolidayDates = [],
 }: {
   leaveTypes: LeaveTypeOption[];
   employees: { id: string; name: string }[];
   defaultEmployeeId: string;
   canFileForOthers: boolean;
+  /** L10 — ISO "yyyy-MM-dd" dates excluded from the deducted-day preview. */
+  publicHolidayDates?: string[];
 }) {
   return (
     <Modal trigger="New" title="Time Off Request">
@@ -51,6 +62,7 @@ export function RequestLeaveButton({
           employees={employees}
           defaultEmployeeId={defaultEmployeeId}
           canFileForOthers={canFileForOthers}
+          publicHolidayDates={publicHolidayDates}
           onDone={close}
         />
       )}
@@ -63,23 +75,25 @@ function RequestLeaveForm({
   employees,
   defaultEmployeeId,
   canFileForOthers,
+  publicHolidayDates,
   onDone,
 }: {
   leaveTypes: LeaveTypeOption[];
   employees: { id: string; name: string }[];
   defaultEmployeeId: string;
   canFileForOthers: boolean;
+  publicHolidayDates: string[];
   onDone: () => void;
 }) {
   const [state, action] = useActionState(requestLeaveAction, idle);
   const [typeId, setTypeId] = useState(leaveTypes[0]?.id ?? "");
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
-  const [attachment, setAttachment] = useState("");
   const [attachmentName, setAttachmentName] = useState("");
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const selected = useMemo(() => leaveTypes.find((type) => type.id === typeId), [leaveTypes, typeId]);
-  const days = workingDaysBetween(start, end);
+  const days = workingDaysBetween(start, end, publicHolidayDates);
   const overBalance = Boolean(selected?.isPaid && days > selected.available);
 
   if (state.ok) {
@@ -97,7 +111,6 @@ function RequestLeaveForm({
   return (
     <form action={action} className="flex flex-col gap-4">
       <FormMessage state={state} />
-      <input type="hidden" name="attachment" value={attachment} />
 
       <Field label="Employee" name="employeeId" error={state.errors?.employeeId}>
         <Select name="employeeId" defaultValue={defaultEmployeeId} disabled={!canFileForOthers}>
@@ -143,28 +156,40 @@ function RequestLeaveForm({
 
       {selected?.requiresAttachment ? (
         <Field
-          label="Attachment"
+          label="Certificate"
           name="attachmentFile"
-          error={state.errors?.attachment}
-          hint="A medical certificate is required for sick leave."
+          error={state.errors?.attachment ?? fileError ?? undefined}
+          hint="PNG, JPEG or PDF up to 5 MB."
           required
         >
           <div className="flex items-center gap-3">
+            {/* L9 — the file itself is submitted with the form; no base64 in the database. */}
             <input
               id="attachmentFile"
               name="attachmentFile"
               type="file"
-              accept="image/*,application/pdf"
+              accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"
               className="field py-1.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-brand-100 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-brand-700"
               onChange={(event) => {
+                setFileError(null);
                 const file = event.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => {
-                  setAttachment(String(reader.result));
-                  setAttachmentName(file.name);
-                };
-                reader.readAsDataURL(file);
+                if (!file) {
+                  setAttachmentName("");
+                  return;
+                }
+                if (!ACCEPTED_TYPES.includes(file.type)) {
+                  setFileError("Only PNG, JPEG, and PDF files are allowed.");
+                  event.target.value = "";
+                  setAttachmentName("");
+                  return;
+                }
+                if (file.size > MAX_FILE_SIZE_BYTES) {
+                  setFileError("File size exceeds 5 MB limit.");
+                  event.target.value = "";
+                  setAttachmentName("");
+                  return;
+                }
+                setAttachmentName(file.name);
               }}
             />
           </div>
