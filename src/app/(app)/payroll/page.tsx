@@ -110,16 +110,36 @@ async function ManagerView({ params, companyId }: { params: Search; companyId: s
                         <td className="mono">{formatCurrency(payslip.grossMonthly)}</td>
                         <td className="mono text-danger">− {formatCurrency(payslip.totalDeductions)}</td>
                         <td className="mono font-semibold text-present">{formatCurrency(payslip.netPay)}</td>
-                        <td>
-                          <Link href={`/payroll/${payslip.id}`} className="text-sm font-medium text-brand-600 hover:underline">
-                            View
-                          </Link>
+                        <td className="text-right">
+                          <div className="flex items-center justify-end gap-2.5">
+                            <Link href={`/payroll/${payslip.id}`} className="text-sm font-medium text-brand-600 hover:underline">
+                              View
+                            </Link>
+                            <span className="text-ink-300">·</span>
+                            <Link
+                              href={`/employees/${employee.id}?tab=salary`}
+                              className="text-xs font-medium text-ink-600 hover:text-brand-700 hover:underline"
+                              title="Edit salary structure"
+                            >
+                              Edit Salary
+                            </Link>
+                          </div>
                         </td>
                       </>
                     ) : (
-                      <td colSpan={4} className="text-sm text-ink-400">
-                        Not yet generated
-                      </td>
+                      <>
+                        <td colSpan={4} className="text-sm text-ink-400">
+                          Not yet generated
+                        </td>
+                        <td className="text-right">
+                          <Link
+                            href={`/employees/${employee.id}?tab=salary`}
+                            className="btn-secondary btn-sm inline-flex items-center gap-1"
+                          >
+                            Set up salary
+                          </Link>
+                        </td>
+                      </>
                     )}
                   </tr>
                 );

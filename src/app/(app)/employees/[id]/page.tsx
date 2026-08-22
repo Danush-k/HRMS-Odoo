@@ -20,8 +20,16 @@ export const metadata: Metadata = { title: "Employee" };
 
 const text = (value: string | null | undefined) => value ?? "";
 
-export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EmployeeProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const search = await searchParams;
+  const initialTab = search?.tab;
   const viewer = await requireUser();
 
   const isSelf = viewer.id === id;
@@ -324,7 +332,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
       />
 
       <div className="card px-5 pt-1 pb-5 sm:px-6">
-        <Tabs items={tabs} />
+        <Tabs items={tabs} initial={initialTab} />
       </div>
 
       {recentLeave.length > 0 ? (
