@@ -54,6 +54,7 @@ async function ManagerView({ params, companyId }: { params: Search; companyId: s
       loginId: true,
       avatar: true,
       jobPosition: true,
+      department: true,
       salary: {
         select: {
           monthlyWage: true,
@@ -96,7 +97,11 @@ async function ManagerView({ params, companyId }: { params: Search; companyId: s
       {employees.length === 0 ? (
         <EmptyState title="No employees" description="Add employees before payroll can be run." />
       ) : (
-        <PayrollTable employees={employees} payslips={payslips} />
+        <PayrollTable
+          employees={employees}
+          payslips={payslips}
+          periodLabel={format(month, "MMMM yyyy")}
+        />
       )}
     </>
   );
