@@ -7,10 +7,6 @@ import { isManager, requireUser } from "@/lib/auth";
 import { format } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { formatCurrency, type SalaryComponent } from "@/lib/salary";
-import { PayslipHeaderActions } from "./payslip-header-actions";
-
-export const metadata: Metadata = { title: "Payslip" };
-
 export default async function PayslipPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const viewer = await requireUser();
@@ -26,7 +22,6 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
           loginId: true,
           avatar: true,
           jobPosition: true,
-          salary: true,
         },
       },
       generatedBy: { select: { firstName: true, lastName: true } },
@@ -46,9 +41,6 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
         <Link href="/payroll" className="text-sm font-medium text-brand-600 hover:underline">
           ← Back to Payroll
         </Link>
-        {isManager(viewer.role) ? (
-          <PayslipHeaderActions employee={payslip.employee} />
-        ) : null}
       </div>
 
       <div className="card overflow-hidden">
