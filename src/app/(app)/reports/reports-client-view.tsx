@@ -325,9 +325,7 @@ export function ReportsClientView({
               <h3 className="text-base font-bold text-ink-900">Department Payroll Analytics</h3>
               <p className="text-xs text-ink-500">Full expenditure, employee count, and average wage breakdown by department.</p>
             </div>
-            <button onClick={handleDownloadPayroll} className="btn-primary btn-sm">
-              Download Payroll CSV
-            </button>
+            
           </div>
 
           <div className="overflow-x-auto">
