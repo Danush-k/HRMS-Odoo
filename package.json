@@ -7,7 +7,7 @@
     "node": ">=18.18.0"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx scripts/sync-env-db.ts && prisma generate && next dev",
     "build": "tsx scripts/sync-env-db.ts && prisma generate && next build",
     "start": "next start",
     "lint": "next lint",

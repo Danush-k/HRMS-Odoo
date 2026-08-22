@@ -354,4 +354,3 @@ model LoginAttempt {
   @@index([identifier, createdAt])
   @@index([ip, createdAt])
 }
-
