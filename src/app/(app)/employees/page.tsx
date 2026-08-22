@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { AttendanceWidget } from "@/components/attendance-widget";
 import { SearchInput } from "@/components/search-input";
-import { AttendanceChip, Avatar, EmptyState, LeaveChip, SubmitButton } from "@/components/ui";
+import { AttendanceChip, Avatar, EmptyState, LeaveChip } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { dayKey } from "@/lib/dates";
 import { db } from "@/lib/db";
@@ -16,18 +16,12 @@ export const metadata: Metadata = { title: "Dashboard" };
 export default async function EmployeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; denied?: string; status?: string; view?: string }>;
+  searchParams: Promise<{ q?: string; denied?: string; status?: string; view?: string; page?: string }>;
 }) {
-  const { q, denied, status = "ALL", view = "grid" } = await searchParams;
+  const searchParamsData = await searchParams;
+  const { q, denied, status = "ALL", view = "grid", page = "1" } = searchParamsData;
   const user = await requireUser();
   const isAdminOrHr = user.role === "ADMIN" || user.role === "HR";
-
-  const currentDateFormatted = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 
   if (!isAdminOrHr) {
     // ------------------------------------------------------------------------
@@ -72,59 +66,31 @@ export default async function EmployeesPage({
 
     return (
       <div className="flex flex-col gap-6">
-        {/* Welcome Hero Banner */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 p-6 md:p-8 text-white shadow-xl shadow-brand-900/10">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-brand-500/20 blur-3xl" />
-          <div className="pointer-events-none absolute right-1/3 -bottom-10 h-40 w-40 rounded-full bg-brand-400/15 blur-2xl" />
-
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
-            <div className="flex items-center gap-5">
-              <div className="relative shrink-0">
-                <Avatar src={user.avatar} name={`${user.firstName} ${user.lastName}`} size={72} />
-                <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-surface text-xs font-bold ring-2 ring-brand-700 text-brand-700">
-                  ✓
+        {/* Welcome Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-brand-200/80 bg-gradient-to-r from-brand-50 to-surface p-6 shadow-xs">
+          <div className="flex items-center gap-4">
+            <Avatar src={user.avatar} name={`${user.firstName} ${user.lastName}`} size={64} />
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-ink-900">Welcome back, {user.firstName}!</h1>
+                <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+                  {user.role}
                 </span>
               </div>
-
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
-                    Welcome back, {user.firstName}! 👋
-                  </h1>
-                  <span className="rounded-full bg-white/15 px-3 py-0.5 text-xs font-semibold tracking-wide text-white/90 backdrop-blur-md">
-                    {user.role}
-                  </span>
-                </div>
-
-                <p className="mt-1.5 text-sm text-white/80">
-                  {employee?.jobPosition || "Team Member"} • {employee?.department || user.company.name}
-                </p>
-
-                <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-white/70">
-                  <span className="mono rounded bg-white/10 px-2 py-0.5 font-medium text-white/90">
-                    ID: {user.loginId}
-                  </span>
-                  <span>•</span>
-                  <span>{currentDateFormatted}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Attendance Quick Badge */}
-            <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-md min-w-[220px]">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70">
-                Today's Shift Status
+              <p className="mt-1 text-sm text-ink-600">
+                {employee?.jobPosition || "Team Member"} • {employee?.department || user.company.name}
               </p>
-              <div className="mt-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="badge-pulse">
-                    <span className={`badge-pulse-dot ${checkedInSince ? "bg-present" : onLeaveToday ? "bg-leave" : "bg-absent"}`} />
-                    <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${checkedInSince ? "bg-present" : onLeaveToday ? "bg-leave" : "bg-absent"}`} />
-                  </span>
-                  <span className="text-sm font-bold text-white">
-                    {checkedInSince ? "In Office" : onLeaveToday ? "On Leave" : "Not Checked In"}
-                  </span>
-                </div>
+              <p className="mono mt-1 text-xs text-brand-600 font-semibold">ID: {user.loginId}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-surface p-3 border border-line shadow-2xs">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-500">Attendance Status</p>
+              <div className="mt-1 flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${checkedInSince ? "bg-present animate-pulse" : onLeaveToday ? "bg-leave" : "bg-absent"}`} />
+                <span className="text-xs font-bold text-ink-900">
+                  {checkedInSince ? "Checked In" : onLeaveToday ? "On Leave" : "Not Checked In"}
+                </span>
               </div>
             </div>
           </div>
@@ -132,45 +98,36 @@ export default async function EmployeesPage({
 
         {/* 3.2.1 QUICK ACCESS CARDS GRID */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-ink-500">Quick Access Hub</h2>
-            <span className="text-xs text-ink-400">Core HR Operations</span>
-          </div>
-
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-500 mb-3">Quick Access Dashboard</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* CARD 1: PROFILE */}
-            <div className="card group stat-card-glow flex flex-col justify-between p-5 border-t-4 border-t-brand-500">
+            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-brand-600">01. Profile</span>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-700 transition-transform group-hover:scale-110">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-brand-600">01. Profile</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
                     </svg>
                   </div>
                 </div>
-
-                <h3 className="mt-4 text-lg font-bold text-ink-900 group-hover:text-brand-600 transition-colors">
-                  My Profile
-                </h3>
-                <p className="mt-1 text-xs text-ink-500 leading-relaxed">
-                  Personal details, bank info, skills, and reporting structure.
+                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-brand-600 transition-colors">My Profile</h3>
+                <p className="mt-1 text-xs text-ink-500">
+                  View personal details, bank info, resume, and manager information.
                 </p>
-
                 {employee?.manager ? (
-                  <div className="mt-4 rounded-lg bg-ink-100/60 p-2.5 text-[11px] text-ink-600">
-                    Reports to: <strong className="font-semibold text-ink-900">{employee.manager.firstName} {employee.manager.lastName}</strong>
+                  <div className="mt-3 rounded bg-ink-100/60 px-2.5 py-1.5 text-[11px] text-ink-600">
+                    Manager: <strong className="font-semibold text-ink-800">{employee.manager.firstName} {employee.manager.lastName}</strong>
                   </div>
                 ) : null}
               </div>
-
               <Link
                 href="/profile"
-                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold group-hover:border-brand-300 group-hover:bg-brand-50 group-hover:text-brand-700 transition-all"
+                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold"
               >
-                <span>View Full Profile</span>
+                View Full Profile
                 <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
                   <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
                 </svg>
@@ -178,35 +135,30 @@ export default async function EmployeesPage({
             </div>
 
             {/* CARD 2: ATTENDANCE */}
-            <div className="card group stat-card-glow flex flex-col justify-between p-5 border-t-4 border-t-present">
+            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-present/60 hover:shadow-md">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-present">02. Attendance</span>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-present-soft text-present transition-transform group-hover:scale-110">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-present">02. Attendance</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-present-soft text-present">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10" />
                       <polyline points="12 6 12 12 16 14" />
                     </svg>
                   </div>
                 </div>
-
-                <h3 className="mt-4 text-lg font-bold text-ink-900 group-hover:text-present transition-colors">
-                  Daily Clock-In
-                </h3>
-                <p className="mt-1 text-xs text-ink-500 leading-relaxed">
-                  Log your daily attendance and monitor active working hours.
+                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-present transition-colors">Daily Clock-In</h3>
+                <p className="mt-1 text-xs text-ink-500">
+                  Track your daily work hours, check-in timestamps and logs.
                 </p>
-
-                <div className="mt-4">
+                <div className="mt-3">
                   <AttendanceWidget checkedInSince={checkedInSince} onLeaveToday={onLeaveToday} />
                 </div>
               </div>
-
               <Link
                 href="/attendance"
-                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold group-hover:border-present/40 group-hover:bg-present-soft/60 group-hover:text-present transition-all"
+                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold"
               >
-                <span>Attendance Log</span>
+                Attendance History
                 <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
                   <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
                 </svg>
@@ -214,11 +166,11 @@ export default async function EmployeesPage({
             </div>
 
             {/* CARD 3: LEAVE REQUESTS */}
-            <div className="card group stat-card-glow flex flex-col justify-between p-5 border-t-4 border-t-leave">
+            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-leave/60 hover:shadow-md">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-leave">03. Time Off</span>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-leave-soft text-leave transition-transform group-hover:scale-110">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-leave">03. Time Off</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-leave-soft text-leave">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                       <line x1="16" y1="2" x2="16" y2="6" />
@@ -227,26 +179,21 @@ export default async function EmployeesPage({
                     </svg>
                   </div>
                 </div>
-
-                <h3 className="mt-4 text-lg font-bold text-ink-900 group-hover:text-leave transition-colors">
-                  Leave Balances
-                </h3>
-
-                <div className="mt-3 flex flex-wrap gap-2">
+                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-leave transition-colors">Leave Balances</h3>
+                <div className="mt-2 flex flex-wrap gap-2">
                   {leaveBalances.map((bal) => (
-                    <div key={bal.id} className="rounded-md bg-leave-soft/50 border border-leave/20 px-2.5 py-1 text-[11px]">
-                      <span className="font-semibold text-ink-800">{bal.leaveType.name}: </span>
-                      <span className="font-bold text-leave">{bal.allocated - bal.used} days left</span>
+                    <div key={bal.id} className="rounded bg-brand-50/70 border border-brand-200 px-2 py-1 text-[11px]">
+                      <span className="font-semibold text-brand-800">{bal.leaveType.name}: </span>
+                      <span className="font-bold text-brand-600">{bal.allocated - bal.used} days left</span>
                     </div>
                   ))}
                 </div>
               </div>
-
               <Link
                 href="/time-off"
-                className="btn-primary mt-5 w-full justify-between text-xs font-semibold shadow-xs"
+                className="btn-primary mt-5 w-full justify-between text-xs font-semibold"
               >
-                <span>Apply for Time Off</span>
+                Apply for Time Off
                 <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
                   <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
                 </svg>
@@ -254,11 +201,11 @@ export default async function EmployeesPage({
             </div>
 
             {/* CARD 4: LOGOUT */}
-            <div className="card group stat-card-glow flex flex-col justify-between p-5 border-t-4 border-t-danger">
+            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-danger/60 hover:shadow-md">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-danger">04. Session</span>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger-soft text-danger transition-transform group-hover:scale-110">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-danger">04. Session</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-danger-soft text-danger">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                       <polyline points="16 17 21 12 16 7" />
@@ -266,17 +213,13 @@ export default async function EmployeesPage({
                     </svg>
                   </div>
                 </div>
-
-                <h3 className="mt-4 text-lg font-bold text-ink-900 group-hover:text-danger transition-colors">
-                  Sign Out
-                </h3>
+                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-danger transition-colors">Sign Out</h3>
                 <p className="mt-1 text-xs text-ink-500">
-                  Signed in as <strong className="font-semibold text-ink-800">{user.loginId}</strong>
+                  Signed in as <strong className="font-semibold text-ink-700">{user.loginId}</strong>
                 </p>
               </div>
-
               <form action={signOutAction} className="mt-5">
-                <button type="submit" className="btn-danger w-full justify-center text-xs font-semibold shadow-xs">
+                <button type="submit" className="btn-danger w-full justify-center text-xs font-semibold">
                   Logout Session
                 </button>
               </form>
@@ -291,23 +234,20 @@ export default async function EmployeesPage({
           {/* Recent Attendance */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-present" />
-                <h3 className="text-xs font-bold text-ink-900 uppercase tracking-wider">Recent Attendance</h3>
-              </div>
-              <Link href="/attendance" className="text-xs font-semibold text-brand-600 hover:underline">View History →</Link>
+              <h3 className="text-sm font-bold text-ink-900 uppercase tracking-wider">Recent Attendance Activity</h3>
+              <Link href="/attendance" className="text-xs font-semibold text-brand-600 hover:underline">View All</Link>
             </div>
             {recentAttendance.length === 0 ? (
-              <p className="text-xs text-ink-400 py-6 text-center">No attendance logs recorded yet.</p>
+              <p className="text-xs text-ink-400 py-4 text-center">No attendance recorded recently.</p>
             ) : (
               <div className="divide-y divide-line">
                 {recentAttendance.map((row) => (
-                  <div key={row.id} className="py-3 flex items-center justify-between text-xs">
+                  <div key={row.id} className="py-2.5 flex items-center justify-between text-xs">
                     <div>
                       <p className="font-semibold text-ink-800">
                         {new Date(row.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                       </p>
-                      <p className="text-[11px] text-ink-500 mt-0.5">
+                      <p className="text-[11px] text-ink-500">
                         {row.checkIn ? new Date(row.checkIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"} to{" "}
                         {row.checkOut ? new Date(row.checkOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
                       </p>
@@ -322,21 +262,18 @@ export default async function EmployeesPage({
           {/* Recent Leave Requests */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-leave" />
-                <h3 className="text-xs font-bold text-ink-900 uppercase tracking-wider">My Leave Applications</h3>
-              </div>
-              <Link href="/time-off" className="text-xs font-semibold text-brand-600 hover:underline">Apply New →</Link>
+              <h3 className="text-sm font-bold text-ink-900 uppercase tracking-wider">My Leave Requests</h3>
+              <Link href="/time-off" className="text-xs font-semibold text-brand-600 hover:underline">Apply New</Link>
             </div>
             {recentLeaveRequests.length === 0 ? (
-              <p className="text-xs text-ink-400 py-6 text-center">No leave requests submitted yet.</p>
+              <p className="text-xs text-ink-400 py-4 text-center">No leave requests submitted yet.</p>
             ) : (
               <div className="divide-y divide-line">
                 {recentLeaveRequests.map((req) => (
-                  <div key={req.id} className="py-3 flex items-center justify-between text-xs">
+                  <div key={req.id} className="py-2.5 flex items-center justify-between text-xs">
                     <div>
                       <p className="font-semibold text-ink-800">{req.leaveType.name} ({req.days} days)</p>
-                      <p className="text-[11px] text-ink-500 mt-0.5">
+                      <p className="text-[11px] text-ink-500">
                         {new Date(req.startDate).toLocaleDateString()} – {new Date(req.endDate).toLocaleDateString()}
                       </p>
                     </div>
@@ -356,34 +293,42 @@ export default async function EmployeesPage({
   // ADMIN / HR DASHBOARD (SRS 3.2.2)
   // ------------------------------------------------------------------------
 
-  // Fetch all company employees to compute total statistics
-  const allCompanyEmployees = await db.employee.findMany({
+  const today = dayKey(new Date());
+
+  // Fast count of total company employees
+  const totalEmployees = await db.employee.count({
     where: { companyId: user.companyId },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      jobPosition: true,
-      department: true,
-      loginId: true,
-      email: true,
-      role: true,
-      status: true,
-      avatar: true,
-      mobile: true,
-      location: true,
-    },
-    orderBy: [{ status: "asc" }, { firstName: "asc" }],
   });
 
-  // Fetch today's attendance for status calculation
-  const attendance = await db.attendance.findMany({
+  // Fetch today's attendance for status metric calculation
+  const allTodayAttendance = await db.attendance.findMany({
     where: {
-      date: dayKey(new Date()),
-      employeeId: { in: allCompanyEmployees.map((e) => e.id) },
+      date: today,
+      employee: { companyId: user.companyId },
     },
     select: { employeeId: true, status: true, checkIn: true, checkOut: true },
   });
+
+  // Calculate quick metrics for the stat summary cards
+  let inOfficeCount = 0;
+  let onLeaveCount = 0;
+
+  const statusMap = new Map<string, "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY">();
+  for (const row of allTodayAttendance) {
+    if (row.status === "LEAVE") {
+      statusMap.set(row.employeeId, "LEAVE");
+      onLeaveCount++;
+    } else if (row.checkIn && !row.checkOut) {
+      statusMap.set(row.employeeId, "PRESENT");
+      inOfficeCount++;
+    } else if (row.status === "HALF_DAY" || row.status === "PRESENT") {
+      statusMap.set(row.employeeId, row.status as "PRESENT" | "HALF_DAY");
+      inOfficeCount++;
+    } else {
+      statusMap.set(row.employeeId, "ABSENT");
+    }
+  }
+  const absentCount = Math.max(0, totalEmployees - inOfficeCount - onLeaveCount);
 
   // Fetch pending leave requests for Admin approval widget (SRS 3.2.2)
   const pendingLeaveRequests = await db.leaveRequest.findMany({
@@ -399,53 +344,101 @@ export default async function EmployeesPage({
     take: 5,
   });
 
-  const statusOf = new Map<string, "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY">(
-    allCompanyEmployees.map((emp) => {
-      const row = attendance.find((a) => a.employeeId === emp.id);
-      if (!row) return [emp.id, "ABSENT"];
-      if (row.status === "LEAVE") return [emp.id, "LEAVE"];
-      if (row.checkIn && !row.checkOut) return [emp.id, "PRESENT"];
-      return [emp.id, (row.status as "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY") || "ABSENT"];
-    })
-  );
+  // Construct database WHERE filter (P7: Full name, partial name, ID, email search)
+  const trimmedQ = (q ?? "").trim();
+  const pageNum = Math.max(1, parseInt(page || "1", 10) || 1);
+  const pageSize = 12;
 
-  // Compute metrics
-  const totalEmployees = allCompanyEmployees.length;
-  let inOfficeCount = 0;
-  let onLeaveCount = 0;
-  let absentCount = 0;
+  const where: any = {
+    companyId: user.companyId,
+  };
 
-  allCompanyEmployees.forEach((emp) => {
-    const st = statusOf.get(emp.id);
-    if (st === "PRESENT" || st === "HALF_DAY") inOfficeCount++;
-    else if (st === "LEAVE") onLeaveCount++;
-    else absentCount++;
-  });
-
-  const presentPercentage = totalEmployees ? Math.round((inOfficeCount / totalEmployees) * 100) : 0;
-
-  // Filter employees based on search query `q` and status filter `status`
-  const employees = allCompanyEmployees.filter((emp) => {
-    const empStatus = statusOf.get(emp.id) || "ABSENT";
-
-    // Status filter
-    if (status === "PRESENT" && empStatus !== "PRESENT" && empStatus !== "HALF_DAY") return false;
-    if (status === "LEAVE" && empStatus !== "LEAVE") return false;
-    if (status === "ABSENT" && empStatus !== "ABSENT") return false;
-
-    // Search query filter
-    if (q) {
-      const query = q.toLowerCase();
-      const matchName = `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(query);
-      const matchPosition = emp.jobPosition?.toLowerCase().includes(query);
-      const matchDept = emp.department?.toLowerCase().includes(query);
-      const matchLogin = emp.loginId.toLowerCase().includes(query);
-      const matchEmail = emp.email.toLowerCase().includes(query);
-      return matchName || matchPosition || matchDept || matchLogin || matchEmail;
+  if (trimmedQ) {
+    const words = trimmedQ.split(/\s+/).filter(Boolean);
+    if (words.length === 1) {
+      const w = words[0];
+      where.OR = [
+        { firstName: { contains: w } },
+        { lastName: { contains: w } },
+        { loginId: { contains: w } },
+        { email: { contains: w } },
+        { jobPosition: { contains: w } },
+        { department: { contains: w } },
+      ];
+    } else {
+      const firstWord = words[0];
+      const lastWord = words.slice(1).join(" ");
+      where.OR = [
+        {
+          AND: [
+            { firstName: { contains: firstWord } },
+            { lastName: { contains: lastWord } },
+          ],
+        },
+        {
+          AND: [
+            { firstName: { contains: lastWord } },
+            { lastName: { contains: firstWord } },
+          ],
+        },
+        { firstName: { contains: trimmedQ } },
+        { lastName: { contains: trimmedQ } },
+        { loginId: { contains: trimmedQ } },
+        { email: { contains: trimmedQ } },
+        { jobPosition: { contains: trimmedQ } },
+        { department: { contains: trimmedQ } },
+      ];
     }
+  }
 
-    return true;
+  // Attendance status filter
+  if (status === "PRESENT") {
+    const presentEmpIds = Array.from(statusMap.entries())
+      .filter(([_, st]) => st === "PRESENT" || st === "HALF_DAY")
+      .map(([id]) => id);
+    where.id = { in: presentEmpIds };
+  } else if (status === "LEAVE") {
+    const leaveEmpIds = Array.from(statusMap.entries())
+      .filter(([_, st]) => st === "LEAVE")
+      .map(([id]) => id);
+    where.id = { in: leaveEmpIds };
+  } else if (status === "ABSENT") {
+    const nonAbsentEmpIds = Array.from(statusMap.entries())
+      .filter(([_, st]) => st === "PRESENT" || st === "HALF_DAY" || st === "LEAVE")
+      .map(([id]) => id);
+    where.id = { notIn: nonAbsentEmpIds };
+  }
+
+  // P6: Database-level total count and pagination calculation
+  const totalMatching = await db.employee.count({ where });
+  const totalPages = Math.max(1, Math.ceil(totalMatching / pageSize));
+  const safePage = Math.min(pageNum, totalPages);
+
+  // P5: Explicitly select only necessary fields, absolutely excluding passwordHash and sensitive personal data
+  const employees = await db.employee.findMany({
+    where,
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      jobPosition: true,
+      department: true,
+      loginId: true,
+      email: true,
+      role: true,
+      status: true,
+      avatar: true,
+      mobile: true,
+      location: true,
+    },
+    orderBy: [{ status: "asc" }, { firstName: "asc" }],
+    skip: (safePage - 1) * pageSize,
+    take: pageSize,
   });
+
+  const statusOf = new Map<string, "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY">(
+    employees.map((emp) => [emp.id, statusMap.get(emp.id) || "ABSENT"])
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -458,192 +451,132 @@ export default async function EmployeesPage({
         </div>
       ) : null}
 
-      {/* Executive Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 p-6 md:p-8 text-white shadow-xl shadow-brand-900/10">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-brand-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/4 -bottom-10 h-40 w-40 rounded-full bg-brand-400/15 blur-2xl" />
-
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <Avatar src={user.avatar} name={`${user.firstName} ${user.lastName}`} size={64} />
-              <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-present text-[10px] font-bold ring-2 ring-brand-800 text-white">
-                ✓
-              </span>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
-                  {user.role === "ADMIN" ? "Executive Dashboard" : "HR Operations Dashboard"}
-                </h1>
-                <span className="rounded-full bg-white/15 px-3 py-0.5 text-xs font-semibold tracking-wide text-white/90 backdrop-blur-md">
-                  {user.role === "ADMIN" ? "Administrator" : "HR Officer"}
-                </span>
-              </div>
-              <p className="mt-1.5 text-sm text-white/80">
-                Welcome back, <strong className="font-semibold text-white">{user.firstName}</strong>. Real-time workforce operations for <strong className="font-semibold text-white">{user.company.name}</strong>.
-              </p>
-              <div className="mt-2.5 flex items-center gap-3 text-xs text-white/70">
-                <span>{currentDateFormatted}</span>
-                <span>•</span>
-                <span className="flex items-center gap-1.5 text-white/90 font-medium">
-                  <span className="badge-pulse">
-                    <span className="badge-pulse-dot" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-present" />
-                  </span>
-                  System Operations Normal
-                </span>
-              </div>
-            </div>
+      {/* Header Section */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-ink-900">Admin & HR Dashboard</h1>
+            <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+              {totalEmployees} {totalEmployees === 1 ? "Member" : "Members"}
+            </span>
           </div>
-
-          <Link
-            href="/employees/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-brand-900 shadow-md transition-all hover:bg-brand-50 hover:scale-105 active:scale-95 shrink-0"
-          >
-            <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
-              <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-            </svg>
-            Add Employee
-          </Link>
+          <p className="mt-1 text-sm text-ink-500">
+            Manage employees, inspect attendance, and review leave approvals for <strong className="font-semibold text-ink-700">{user.company.name}</strong>
+          </p>
         </div>
+
+        <Link
+          href="/employees/new"
+          className="btn-primary inline-flex items-center gap-2 shadow-xs transition-transform active:scale-[0.98]"
+        >
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+          </svg>
+          Add Employee
+        </Link>
       </div>
 
-      {/* Stats Summary KPI Cards */}
+      {/* Stats Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        
-        {/* TOTAL TEAM */}
-        <div className="card stat-card-glow p-5 border-t-4 border-t-brand-600">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-ink-300 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-ink-500">Total Workforce</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">Total Team</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
               <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
                 <path d="M7 8a3 3 0 100-6 3 3 0 000 6zM14.5 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1.615 16.428a1.224 1.224 0 01-.569-1.175 6.002 6.002 0 0111.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 017 17a9.953 9.953 0 01-5.385-.572zM14.5 16h-.187.002c.322-.452.544-.96.643-1.5a4.5 4.5 0 00-7.858-3.003c.277-.04.558-.06.843-.06a7.5 7.5 0 016.92 4.563h-.363z" />
               </svg>
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-ink-900 num">{totalEmployees}</span>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-ink-900 num">{totalEmployees}</span>
             <span className="text-xs text-ink-500">active roster</span>
-          </div>
-          <div className="mt-3 w-full bg-brand-100 rounded-full h-1.5">
-            <div className="bg-brand-600 h-1.5 rounded-full" style={{ width: "100%" }} />
           </div>
         </div>
 
-        {/* IN OFFICE */}
-        <div className="card stat-card-glow p-5 border-t-4 border-t-present">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-present/40 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-present">In Office Today</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-present-soft text-present">
-              <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+            <span className="text-xs font-semibold uppercase tracking-wider text-present">In Office</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-present-soft text-present">
+              <svg viewBox="0 20 20" width="18" height="18" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
               </svg>
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-ink-900 num">{inOfficeCount}</span>
-            <span className="text-xs font-bold text-present">{presentPercentage}% present</span>
-          </div>
-          <div className="mt-3 w-full bg-present-soft rounded-full h-1.5">
-            <div className="bg-present h-1.5 rounded-full" style={{ width: `${presentPercentage}%` }} />
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-ink-900 num">{inOfficeCount}</span>
+            <span className="text-xs font-medium text-present">
+              {totalEmployees ? Math.round((inOfficeCount / totalEmployees) * 100) : 0}% present
+            </span>
           </div>
         </div>
 
-        {/* ON LEAVE */}
-        <div className="card stat-card-glow p-5 border-t-4 border-t-leave">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-leave/40 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-leave">On Leave</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-leave-soft text-leave">
+            <span className="text-xs font-semibold uppercase tracking-wider text-leave">On Leave</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-leave-soft text-leave">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" />
               </svg>
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-ink-900 num">{onLeaveCount}</span>
-            <span className="text-xs text-ink-500">approved requests</span>
-          </div>
-          <div className="mt-3 w-full bg-leave-soft rounded-full h-1.5">
-            <div
-              className="bg-leave h-1.5 rounded-full"
-              style={{ width: `${totalEmployees ? (onLeaveCount / totalEmployees) * 100 : 0}%` }}
-            />
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-ink-900 num">{onLeaveCount}</span>
+            <span className="text-xs font-medium text-leave">approved leaves</span>
           </div>
         </div>
 
-        {/* ABSENT */}
-        <div className="card stat-card-glow p-5 border-t-4 border-t-absent">
+        <div className="card relative overflow-hidden p-4 transition-all hover:border-absent/40 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-absent">Absent / Away</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-absent-soft text-absent">
+            <span className="text-xs font-semibold uppercase tracking-wider text-absent">Absent</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-absent-soft text-absent">
               <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
               </svg>
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-ink-900 num">{absentCount}</span>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-ink-900 num">{absentCount}</span>
             <span className="text-xs text-ink-500">not checked in</span>
           </div>
-          <div className="mt-3 w-full bg-absent-soft rounded-full h-1.5">
-            <div
-              className="bg-absent h-1.5 rounded-full"
-              style={{ width: `${totalEmployees ? (absentCount / totalEmployees) * 100 : 0}%` }}
-            />
-          </div>
         </div>
-
       </div>
 
-      {/* PENDING LEAVE APPROVALS WIDGET (SRS 3.2.2) */}
+      {/* Leave Approval Widget */}
       {pendingLeaveRequests.length > 0 ? (
-        <div className="card p-5 border-l-4 border-l-absent shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <span className="badge-pulse">
-                <span className="badge-pulse-dot bg-absent" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-absent" />
-              </span>
-              <h2 className="text-sm font-bold text-ink-900 uppercase tracking-wider">
-                Pending Leave Approvals
+        <div className="card p-5 border-l-4 border-l-brand-600 shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-ink-900">
+                Action Required: Pending Leave Approvals
               </h2>
-              <span className="rounded-full bg-absent-soft px-2.5 py-0.5 text-xs font-extrabold text-absent">
-                {pendingLeaveRequests.length} Needs Action
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[11px] font-bold text-white">
+                {pendingLeaveRequests.length}
               </span>
             </div>
             <Link href="/time-off" className="text-xs font-semibold text-brand-600 hover:underline">
-              View All Requests →
+              View All Leaves →
             </Link>
           </div>
 
           <div className="divide-y divide-line">
             {pendingLeaveRequests.map((req) => (
-              <div key={req.id} className="py-3.5 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
+              <div key={req.id} className="py-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
                   <Avatar
                     src={req.employee.avatar}
                     name={`${req.employee.firstName} ${req.employee.lastName}`}
-                    size={42}
+                    size={36}
                   />
                   <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-ink-900">
-                        {req.employee.firstName} {req.employee.lastName}
-                      </p>
-                      <span className="rounded bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700 border border-brand-200">
-                        {req.employee.jobPosition || "Employee"}
-                      </span>
-                    </div>
-                    <p className="text-xs text-ink-500 mt-0.5">
-                      <span className="font-semibold text-ink-700">{req.leaveType.name}</span> • {req.days} {req.days === 1 ? "day" : "days"} (
+                    <p className="text-xs font-bold text-ink-900">
+                      {req.employee.firstName} {req.employee.lastName}
+                    </p>
+                    <p className="text-[11px] text-ink-500">
+                      {req.leaveType.name} • {req.days} {req.days === 1 ? "day" : "days"} (
                       {new Date(req.startDate).toLocaleDateString()} – {new Date(req.endDate).toLocaleDateString()})
                     </p>
                     {req.remarks ? (
-                      <p className="mt-1 text-xs italic text-ink-600 bg-ink-100/50 rounded px-2 py-1 inline-block">
-                        "{req.remarks}"
-                      </p>
+                      <p className="mt-0.5 text-[11px] italic text-ink-600">"{req.remarks}"</p>
                     ) : null}
                   </div>
                 </div>
@@ -655,23 +588,23 @@ export default async function EmployeesPage({
         </div>
       ) : null}
 
-      {/* Toolbar & Filter Control Bar */}
-      <div className="card p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+      {/* Toolbar & Filters */}
+      <div className="card p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
         {/* Status Filter Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "ALL" }).toString()}`}
-            className={`rounded-lg px-3.5 py-1.5 transition-all ${
+            className={`rounded-md px-3 py-1.5 transition-colors ${
               status === "ALL"
                 ? "bg-brand-600 font-semibold text-white shadow-xs"
                 : "bg-surface text-ink-600 hover:bg-ink-100"
             }`}
           >
-            All Members ({totalEmployees})
+            All ({totalEmployees})
           </Link>
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "PRESENT" }).toString()}`}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 transition-all ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
               status === "PRESENT"
                 ? "bg-present font-semibold text-white shadow-xs"
                 : "bg-surface text-ink-600 hover:bg-present-soft hover:text-present"
@@ -682,7 +615,7 @@ export default async function EmployeesPage({
           </Link>
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "LEAVE" }).toString()}`}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 transition-all ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
               status === "LEAVE"
                 ? "bg-leave font-semibold text-white shadow-xs"
                 : "bg-surface text-ink-600 hover:bg-leave-soft hover:text-leave"
@@ -693,7 +626,7 @@ export default async function EmployeesPage({
           </Link>
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "ABSENT" }).toString()}`}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 transition-all ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
               status === "ABSENT"
                 ? "bg-absent font-semibold text-white shadow-xs"
                 : "bg-surface text-ink-600 hover:bg-absent-soft hover:text-absent"
@@ -704,18 +637,18 @@ export default async function EmployeesPage({
           </Link>
         </div>
 
-        {/* Search & View Mode Switcher */}
-        <div className="flex flex-1 items-center justify-end gap-3 min-w-[280px]">
+        {/* Search & View Toggle */}
+        <div className="flex flex-1 items-center justify-end gap-2.5 min-w-[260px]">
           <Suspense fallback={<div className="h-9 w-full max-w-sm rounded-md bg-ink-100" />}>
-            <SearchInput placeholder="Search by name, position or Login ID..." />
+            <SearchInput placeholder="Search by name, position or ID..." />
           </Suspense>
 
-          <div className="flex items-center rounded-lg border border-line bg-ink-100/70 p-1">
+          <div className="flex items-center rounded-md border border-line bg-ink-100/60 p-0.5">
             <Link
-              href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "grid" }).toString()}`}
-              title="Grid Cards View"
-              className={`rounded-md p-1.5 transition-colors ${
-                view === "grid" ? "bg-surface text-brand-600 shadow-xs font-bold" : "text-ink-500 hover:text-ink-900"
+              href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "grid", ...(page && page !== "1" ? { page } : {}) }).toString()}`}
+              title="Grid View"
+              className={`rounded p-1.5 transition-colors ${
+                view === "grid" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
               }`}
             >
               <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
@@ -723,10 +656,10 @@ export default async function EmployeesPage({
               </svg>
             </Link>
             <Link
-              href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "table" }).toString()}`}
-              title="Table Roster View"
-              className={`rounded-md p-1.5 transition-colors ${
-                view === "table" ? "bg-surface text-brand-600 shadow-xs font-bold" : "text-ink-500 hover:text-ink-900"
+              href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "table", ...(page && page !== "1" ? { page } : {}) }).toString()}`}
+              title="Table View"
+              className={`rounded p-1.5 transition-colors ${
+                view === "table" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
               }`}
             >
               <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
@@ -737,13 +670,13 @@ export default async function EmployeesPage({
         </div>
       </div>
 
-      {/* Main Roster Display */}
+      {/* Main Content Area */}
       {employees.length === 0 ? (
         <EmptyState
-          title={q || status !== "ALL" ? "No matching team members found" : "No employees registered yet"}
+          title={q || status !== "ALL" ? "No matching employees" : "No employees added yet"}
           description={
             q || status !== "ALL"
-              ? "Try adjusting your search criteria or reset filters to see all employees."
+              ? "Try adjusting your search keywords or switching filters to see more results."
               : "Add your first employee to Dayflow to start managing profiles, attendance, and leave."
           }
           action={
@@ -753,187 +686,391 @@ export default async function EmployeesPage({
               </Link>
             ) : (
               <Link href="/employees" className="btn-secondary">
-                Reset All Filters
+                Clear Filters
               </Link>
             )
           }
         />
       ) : view === "table" ? (
         /* Table View */
-        <div className="table-wrap border border-line shadow-xs">
-          <table className="grid-table">
-            <thead>
-              <tr>
-                <th>Employee Profile</th>
-                <th>Login ID</th>
-                <th>Department & Position</th>
-                <th>Access Role</th>
-                <th>Today's Status</th>
-                <th className="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((emp) => {
-                const st = statusOf.get(emp.id) ?? "ABSENT";
-                return (
-                  <tr key={emp.id} className="group hover:bg-brand-50/40 transition-colors">
-                    <td>
-                      <Link href={`/employees/${emp.id}`} className="flex items-center gap-3">
-                        <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={38} />
-                        <div>
-                          <p className="font-semibold text-ink-900 group-hover:text-brand-600 transition-colors">
-                            {emp.firstName} {emp.lastName}
-                          </p>
-                          <p className="text-xs text-ink-400">{emp.email}</p>
-                        </div>
-                      </Link>
-                    </td>
-                    <td>
-                      <span className="mono rounded-md bg-brand-50 border border-brand-200/80 px-2.5 py-1 text-xs font-semibold text-brand-700">
-                        {emp.loginId}
-                      </span>
-                    </td>
-                    <td>
-                      <p className="text-xs font-bold text-ink-800">{emp.jobPosition || "—"}</p>
-                      <p className="text-[11px] text-ink-500">{emp.department || "General Department"}</p>
-                    </td>
-                    <td>
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                          emp.role === "ADMIN"
-                            ? "bg-purple-100 text-purple-800 border border-purple-200"
-                            : emp.role === "HR"
-                            ? "bg-blue-100 text-blue-800 border border-blue-200"
-                            : "bg-ink-100 text-ink-700 border border-ink-200"
-                        }`}
-                      >
-                        {emp.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          st === "PRESENT" || st === "HALF_DAY"
-                            ? "bg-present-soft text-present"
-                            : st === "LEAVE"
-                            ? "bg-leave-soft text-leave"
-                            : "bg-absent-soft text-absent"
-                        }`}
-                      >
+        <div className="flex flex-col gap-4">
+          <div className="table-wrap border border-line shadow-xs">
+            <table className="grid-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Login ID</th>
+                  <th>Department & Position</th>
+                  <th>Role</th>
+                  <th>Employment Status</th>
+                  <th>Today's Status</th>
+                  <th className="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((emp) => {
+                  const st = statusOf.get(emp.id) ?? "ABSENT";
+                  const isActive = emp.status === "ACTIVE";
+                  return (
+                    <tr key={emp.id} className={`group ${!isActive ? "bg-ink-50/40 opacity-85" : ""}`}>
+                      <td>
+                        <Link href={`/employees/${emp.id}`} className="flex items-center gap-3">
+                          <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={36} />
+                          <div>
+                            <p className="font-semibold text-ink-900 group-hover:text-brand-600 transition-colors">
+                              {emp.firstName} {emp.lastName}
+                            </p>
+                            <p className="text-xs text-ink-400">{emp.email}</p>
+                          </div>
+                        </Link>
+                      </td>
+                      <td>
+                        <span className="mono rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 border border-brand-200">
+                          {emp.loginId}
+                        </span>
+                      </td>
+                      <td>
+                        <p className="text-xs font-medium text-ink-800">{emp.jobPosition || "—"}</p>
+                        <p className="text-[11px] text-ink-500">{emp.department || "General"}</p>
+                      </td>
+                      <td>
                         <span
-                          className={`h-2 w-2 rounded-full ${
-                            st === "PRESENT" || st === "HALF_DAY"
-                              ? "bg-present"
-                              : st === "LEAVE"
-                              ? "bg-leave"
-                              : "bg-absent"
-                          }`}
-                        />
-                        {st === "PRESENT" ? "In Office" : st === "HALF_DAY" ? "Half Day" : st === "LEAVE" ? "On Leave" : "Absent"}
-                      </span>
-                    </td>
-                    <td className="text-right">
-                      <Link
-                        href={`/employees/${emp.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-800 hover:underline"
-                      >
-                        <span>Inspect Record</span>
-                        <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
-                          <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                        </svg>
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        /* Grid View Cards */
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {employees.map((emp) => {
-            const st = statusOf.get(emp.id) ?? "ABSENT";
-            const isPresent = st === "PRESENT" || st === "HALF_DAY";
-            const isLeave = st === "LEAVE";
-
-            const borderAccent = isPresent
-              ? "border-t-present"
-              : isLeave
-              ? "border-t-leave"
-              : "border-t-absent";
-
-            return (
-              <li key={emp.id}>
-                <Link
-                  href={`/employees/${emp.id}`}
-                  className={`card group stat-card-glow relative flex flex-col justify-between overflow-hidden border-t-4 ${borderAccent} p-5 h-full`}
-                >
-                  <div>
-                    {/* Top Row: Avatar + Role Badge + Status Indicator */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="relative">
-                        <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={56} />
-                        <span
-                          className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface ${
-                            isPresent ? "bg-present" : isLeave ? "bg-leave" : "bg-absent"
-                          }`}
-                        />
-                      </div>
-
-                      <div className="flex flex-col items-end gap-1">
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                             emp.role === "ADMIN"
-                              ? "bg-purple-100 text-purple-800 border border-purple-200"
+                              ? "bg-purple-100 text-purple-800"
                               : emp.role === "HR"
-                              ? "bg-blue-100 text-blue-800 border border-blue-200"
-                              : "bg-ink-100 text-ink-600 border border-ink-200"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-ink-100 text-ink-700"
                           }`}
                         >
                           {emp.role}
                         </span>
-
+                      </td>
+                      <td>
+                        {/* P8: Visual Status Indicator */}
+                        {isActive ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-800 border border-orange-200">
+                            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+                      <td>
                         <span
-                          className={`inline-flex items-center gap-1 text-[11px] font-bold ${
-                            isPresent ? "text-present" : isLeave ? "text-leave" : "text-absent"
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            st === "PRESENT" || st === "HALF_DAY"
+                              ? "bg-present-soft text-present"
+                              : st === "LEAVE"
+                              ? "bg-leave-soft text-leave"
+                              : "bg-absent-soft text-absent"
                           }`}
                         >
-                          {isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}
+                          <span
+                            className={`h-2 w-2 rounded-full ${
+                              st === "PRESENT" || st === "HALF_DAY"
+                                ? "bg-present"
+                                : st === "LEAVE"
+                                ? "bg-leave"
+                                : "bg-absent"
+                            }`}
+                          />
+                          {st === "PRESENT" ? "In Office" : st === "HALF_DAY" ? "Half Day" : st === "LEAVE" ? "On Leave" : "Absent"}
                         </span>
+                      </td>
+                      <td className="text-right">
+                        <Link
+                          href={`/employees/${emp.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800 hover:underline"
+                        >
+                          View Profile
+                          <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                          </svg>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* P6: Pagination Controls for Table View */}
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3 text-xs shadow-2xs">
+              <p className="text-ink-500">
+                Showing <span className="font-semibold text-ink-900">{(safePage - 1) * pageSize + 1}</span> to{" "}
+                <span className="font-semibold text-ink-900">{Math.min(safePage * pageSize, totalMatching)}</span> of{" "}
+                <span className="font-semibold text-ink-900">{totalMatching}</span> employees
+              </p>
+
+              <div className="flex items-center gap-1">
+                {safePage > 1 ? (
+                  <Link
+                    href={`/employees?${new URLSearchParams({
+                      ...(q ? { q } : {}),
+                      ...(status !== "ALL" ? { status } : {}),
+                      ...(view ? { view } : {}),
+                      page: String(safePage - 1),
+                    }).toString()}`}
+                    className="btn-secondary btn-xs inline-flex items-center gap-1"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                    Previous
+                  </Link>
+                ) : (
+                  <span className="btn-secondary btn-xs opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                    Previous
+                  </span>
+                )}
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                  const isCurrent = p === safePage;
+                  return (
+                    <Link
+                      key={p}
+                      href={`/employees?${new URLSearchParams({
+                        ...(q ? { q } : {}),
+                        ...(status !== "ALL" ? { status } : {}),
+                        ...(view ? { view } : {}),
+                        page: String(p),
+                      }).toString()}`}
+                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${
+                        isCurrent
+                          ? "bg-brand-600 text-white shadow-xs"
+                          : "bg-surface text-ink-700 hover:bg-ink-100 border border-line"
+                      }`}
+                    >
+                      {p}
+                    </Link>
+                  );
+                })}
+
+                {safePage < totalPages ? (
+                  <Link
+                    href={`/employees?${new URLSearchParams({
+                      ...(q ? { q } : {}),
+                      ...(status !== "ALL" ? { status } : {}),
+                      ...(view ? { view } : {}),
+                      page: String(safePage + 1),
+                    }).toString()}`}
+                    className="btn-secondary btn-xs inline-flex items-center gap-1"
+                  >
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </Link>
+                ) : (
+                  <span className="btn-secondary btn-xs opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Grid View */
+        <div className="flex flex-col gap-5">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {employees.map((emp) => {
+              const st = statusOf.get(emp.id) ?? "ABSENT";
+              const isPresent = st === "PRESENT" || st === "HALF_DAY";
+              const isLeave = st === "LEAVE";
+              const isActive = emp.status === "ACTIVE";
+
+              const borderAccent = isPresent
+                ? "border-t-present"
+                : isLeave
+                ? "border-t-leave"
+                : "border-t-absent";
+
+              return (
+                <li key={emp.id}>
+                  <Link
+                    href={`/employees/${emp.id}`}
+                    className={`card group relative flex flex-col justify-between overflow-hidden border-t-4 ${borderAccent} ${
+                      !isActive ? "bg-orange-50/20 border-ink-300 opacity-90" : ""
+                    } p-4 transition-all duration-200 hover:-translate-y-1 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5 h-full`}
+                  >
+                    <div>
+                      {/* Top Row: Avatar + Role Badge + Active/Inactive Status Badge */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="relative">
+                          <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={52} />
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface ${
+                              isPresent ? "bg-present" : isLeave ? "bg-leave" : "bg-absent"
+                            }`}
+                            title={`Today: ${isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}`}
+                          />
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-1.5">
+                            {/* P8: Visual Status Indicator */}
+                            {isActive ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                                Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-orange-800 border border-orange-200">
+                                <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                                Inactive
+                              </span>
+                            )}
+
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                emp.role === "ADMIN"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : emp.role === "HR"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-ink-100 text-ink-600"
+                              }`}
+                            >
+                              {emp.role}
+                            </span>
+                          </div>
+
+                          <span
+                            className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+                              isPresent ? "text-present" : isLeave ? "text-leave" : "text-absent"
+                            }`}
+                          >
+                            {isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Employee Info */}
+                      <div className="mt-3">
+                        <h3 className="truncate text-base font-bold text-ink-900 group-hover:text-brand-600 transition-colors">
+                          {emp.firstName} {emp.lastName}
+                        </h3>
+                        <p className="truncate text-xs font-medium text-ink-600 mt-0.5">
+                          {emp.jobPosition || "No Position Assigned"}
+                        </p>
+                        <p className="truncate text-xs text-ink-400">
+                          {emp.department || "General Department"}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Employee Info */}
-                    <div className="mt-4">
-                      <h3 className="truncate text-base font-bold text-ink-900 group-hover:text-brand-600 transition-colors">
-                        {emp.firstName} {emp.lastName}
-                      </h3>
-                      <p className="truncate text-xs font-semibold text-ink-700 mt-0.5">
-                        {emp.jobPosition || "No Position Assigned"}
-                      </p>
-                      <p className="truncate text-xs text-ink-500 mt-0.5">
-                        {emp.department || "General Department"}
-                      </p>
+                    {/* Footer Info: Login ID & Email */}
+                    <div className="mt-4 border-t border-line/60 pt-3 flex items-center justify-between gap-2">
+                      <span className="mono rounded bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 border border-brand-200/80">
+                        {emp.loginId}
+                      </span>
+                      <span className="truncate text-[11px] text-ink-400 max-w-[130px]" title={emp.email}>
+                        {emp.email}
+                      </span>
                     </div>
-                  </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
 
-                  {/* Footer Info: Login ID & Email */}
-                  <div className="mt-5 border-t border-line/70 pt-3 flex items-center justify-between gap-2">
-                    <span className="mono rounded-md bg-brand-50 border border-brand-200/80 px-2 py-0.5 text-[11px] font-bold text-brand-700">
-                      {emp.loginId}
-                    </span>
-                    <span className="truncate text-[11px] font-medium text-ink-400 max-w-[130px]" title={emp.email}>
-                      {emp.email}
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+          {/* P6: Pagination Controls for Grid View */}
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3 text-xs shadow-2xs">
+              <p className="text-ink-500">
+                Showing <span className="font-semibold text-ink-900">{(safePage - 1) * pageSize + 1}</span> to{" "}
+                <span className="font-semibold text-ink-900">{Math.min(safePage * pageSize, totalMatching)}</span> of{" "}
+                <span className="font-semibold text-ink-900">{totalMatching}</span> employees
+              </p>
+
+              <div className="flex items-center gap-1">
+                {safePage > 1 ? (
+                  <Link
+                    href={`/employees?${new URLSearchParams({
+                      ...(q ? { q } : {}),
+                      ...(status !== "ALL" ? { status } : {}),
+                      ...(view ? { view } : {}),
+                      page: String(safePage - 1),
+                    }).toString()}`}
+                    className="btn-secondary btn-xs inline-flex items-center gap-1"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                    Previous
+                  </Link>
+                ) : (
+                  <span className="btn-secondary btn-xs opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                    Previous
+                  </span>
+                )}
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                  const isCurrent = p === safePage;
+                  return (
+                    <Link
+                      key={p}
+                      href={`/employees?${new URLSearchParams({
+                        ...(q ? { q } : {}),
+                        ...(status !== "ALL" ? { status } : {}),
+                        ...(view ? { view } : {}),
+                        page: String(p),
+                      }).toString()}`}
+                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${
+                        isCurrent
+                          ? "bg-brand-600 text-white shadow-xs"
+                          : "bg-surface text-ink-700 hover:bg-ink-100 border border-line"
+                      }`}
+                    >
+                      {p}
+                    </Link>
+                  );
+                })}
+
+                {safePage < totalPages ? (
+                  <Link
+                    href={`/employees?${new URLSearchParams({
+                      ...(q ? { q } : {}),
+                      ...(status !== "ALL" ? { status } : {}),
+                      ...(view ? { view } : {}),
+                      page: String(safePage + 1),
+                    }).toString()}`}
+                    className="btn-secondary btn-xs inline-flex items-center gap-1"
+                  >
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </Link>
+                ) : (
+                  <span className="btn-secondary btn-xs opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
 }
-
