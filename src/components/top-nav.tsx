@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { DayflowLogoMark } from "./brand-icons";
 import { AttendanceWidget } from "./attendance-widget";
 import { UserMenu } from "./user-menu";
 
@@ -38,19 +39,17 @@ export function TopNav({
   return (
     <header className="sticky top-0 z-40 border-b border-brand-900/40 bg-brand-700 text-white">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-1 px-4 sm:px-6">
-        <Link href="/employees" className="mr-3 flex shrink-0 items-center gap-2">
+        <Link href="/employees" className="mr-3 flex shrink-0 items-center gap-2.5">
           {companyLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={companyLogo} alt="" className="h-7 w-7 rounded object-cover" />
+            <img src={companyLogo} alt="" className="h-7 w-7 rounded-lg object-cover shadow-2xs" />
           ) : (
-            <span className="grid h-7 w-7 place-items-center rounded bg-white/15 text-xs font-bold">
-              {companyName.slice(0, 1).toUpperCase()}
-            </span>
+            <DayflowLogoMark size={28} className="rounded-lg shadow-2xs shrink-0" />
           )}
-          <span className="hidden max-w-[180px] truncate text-sm font-semibold sm:block">{companyName}</span>
+          <span className="hidden max-w-[180px] truncate text-sm font-bold tracking-tight sm:block">{companyName}</span>
         </Link>
 
-        <nav className="flex items-center gap-0.5" aria-label="Main">
+        <nav className="flex items-center gap-1" aria-label="Main">
           {links.map((link) => {
             const active = pathname.startsWith(link.href);
             return (
@@ -58,8 +57,10 @@ export function TopNav({
                 key={link.href}
                 href={link.href}
                 aria-current={active ? "page" : undefined}
-                className={`rounded px-3 py-1.5 text-sm transition ${
-                  active ? "bg-white/15 font-semibold text-white" : "font-medium text-white/75 hover:bg-white/10"
+                className={`rounded-lg px-3 py-1.5 text-sm transition ${
+                  active
+                    ? "bg-white/18 font-semibold text-white shadow-2xs"
+                    : "font-medium text-white/80 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {link.label}

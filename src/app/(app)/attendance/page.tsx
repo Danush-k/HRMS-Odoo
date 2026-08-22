@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { AttendanceLogo } from "@/components/brand-icons";
 import { PeriodNav } from "@/components/period-nav";
 import { SearchInput } from "@/components/search-input";
 import { AttendanceChip, Avatar, EmptyState } from "@/components/ui";
@@ -37,15 +38,18 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-ink-900">Attendance</h1>
-          <p className="text-sm text-ink-500">
-            {currentView === "week"
-              ? "Weekly team attendance matrix."
-              : currentView === "day"
-                ? "Daily check-in and check-out logs for all employees."
-                : "Your day-by-day attendance record."}
-          </p>
+        <div className="flex items-center gap-3">
+          <AttendanceLogo size={36} className="shrink-0" />
+          <div>
+            <h1 className="text-xl font-bold text-ink-900 tracking-tight">Attendance</h1>
+            <p className="text-sm text-ink-500">
+              {currentView === "week"
+                ? "Weekly team attendance matrix."
+                : currentView === "day"
+                  ? "Daily check-in and check-out logs for all employees."
+                  : "Your day-by-day attendance record."}
+            </p>
+          </div>
         </div>
 
         <div className="flex rounded-md border border-line bg-surface p-0.5 text-sm">

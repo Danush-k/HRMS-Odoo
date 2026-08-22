@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { TimeOffLogo } from "@/components/brand-icons";
 import { Avatar, EmptyState, LeaveChip } from "@/components/ui";
 import { isManager, requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/dates";
@@ -110,13 +111,16 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
     <div className="flex flex-col gap-5">
       {/* Header & Main Actions */}
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-ink-900">Time Off</h1>
-          <p className="text-sm text-ink-500">
-            {manager
-              ? `Every request across ${user.company.name}. ${pendingCount} awaiting your decision.`
-              : "Your requests and remaining allocation."}
-          </p>
+        <div className="flex items-center gap-3">
+          <TimeOffLogo size={36} className="shrink-0" />
+          <div>
+            <h1 className="text-xl font-bold text-ink-900 tracking-tight">Time Off</h1>
+            <p className="text-sm text-ink-500">
+              {manager
+                ? `Every request across ${user.company.name}. ${pendingCount} awaiting your decision.`
+                : "Your requests and remaining allocation."}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
