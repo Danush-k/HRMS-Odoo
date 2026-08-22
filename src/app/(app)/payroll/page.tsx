@@ -85,7 +85,12 @@ async function ManagerView({ params, companyId }: { params: Search; companyId: s
         <Suspense fallback={<div className="h-9 w-48 rounded-md bg-ink-100" />}>
           <PeriodNav value={`${year}-${String(monthNumber).padStart(2, "0")}`} type="month" paramName="month" />
         </Suspense>
-        <RunPayrollForm year={year} month={monthNumber} label={format(month, "MMMM yyyy")} />
+        <RunPayrollForm
+          year={year}
+          month={monthNumber}
+          label={format(month, "MMMM yyyy")}
+          employees={employees}
+        />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

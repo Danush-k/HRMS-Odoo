@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui";
 import { formatCurrency, computeSalary } from "@/lib/salary";
 import { EditSalaryModal, type SalaryValues } from "@/components/edit-salary-drawer";
-import { generateSinglePayslipAction, generateSelectedPayrollAction } from "@/server/actions/payroll";
+import { generateSinglePayslipAction } from "@/server/actions/payroll";
 
 export type PayrollEmployee = {
   id: string;
@@ -79,8 +79,6 @@ export function PayrollTable({
   const [editingEmployee, setEditingEmployee] = useState<PayrollEmployee | null>(null);
   const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
 
-  // Multi-select state
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isGenerating, startGenerating] = useTransition();
   const [actionFeedback, setActionFeedback] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [generatingSingleId, setGeneratingSingleId] = useState<string | null>(null);
@@ -198,27 +196,6 @@ export function PayrollTable({
 
   const pendingCount = employees.length - generatedCount;
 
-  // Checkbox Selection Helpers
-  const isAllVisibleSelected =
-    filteredEmployees.length > 0 && filteredEmployees.every((e) => selectedIds.has(e.id));
-
-  const toggleSelectAll = () => {
-    if (isAllVisibleSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredEmployees.map((e) => e.id)));
-    }
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   // Generate single employee payroll
   const handleGenerateSingle = (empId: string, empName: string) => {
     setGeneratingSingleId(empId);
@@ -230,23 +207,6 @@ export function PayrollTable({
         router.refresh();
       } else {
         setActionFeedback({ text: res.message || "Failed to generate payslip.", type: "error" });
-      }
-    });
-  };
-
-  // Generate payroll for selected employees
-  const handleGenerateSelected = () => {
-    if (selectedIds.size === 0) return;
-
-    const ids = Array.from(selectedIds);
-    startGenerating(async () => {
-      const res = await generateSelectedPayrollAction(ids, year, month);
-      if (res.ok) {
-        setActionFeedback({ text: res.message || `Generated ${ids.length} payslips.`, type: "success" });
-        setSelectedIds(new Set());
-        router.refresh();
-      } else {
-        setActionFeedback({ text: res.message || "Failed to generate selected payslips.", type: "error" });
       }
     });
   };
@@ -528,56 +488,6 @@ export function PayrollTable({
         </div>
       </div>
 
-      {/* Floating Bulk Action Bar when 1 or more employees are checked */}
-      {selectedIds.size > 0 ? (
-        <div className="sticky top-4 z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-300 bg-brand-700 p-3.5 text-white shadow-xl animate-in slide-in-from-top duration-150">
-          <div className="flex items-center gap-3">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
-              {selectedIds.size}
-            </span>
-            <div>
-              <p className="text-xs font-semibold">
-                {selectedIds.size} {selectedIds.size === 1 ? "employee" : "employees"} selected
-              </p>
-              <p className="text-[11px] text-white/70">
-                Run payroll generation for only these selected individuals
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedIds(new Set())}
-              className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={handleGenerateSelected}
-              disabled={isGenerating}
-              className="rounded-lg bg-white px-4 py-1.5 text-xs font-bold text-brand-800 hover:bg-brand-50 shadow-xs transition inline-flex items-center gap-1.5 disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <>
-                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  <span>Generating…</span>
-                </>
-              ) : (
-                <>
-                  <span>⚡</span>
-                  <span>Run Payroll for Selected ({selectedIds.size})</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      ) : null}
-
       {/* Main Table View */}
       {filteredEmployees.length === 0 ? (
         <div className="rounded-2xl border border-line bg-surface p-12 text-center">
@@ -614,16 +524,6 @@ export function PayrollTable({
           <table className="grid-table">
             <thead>
               <tr>
-                <th className="w-10 px-3 text-center">
-                  <input
-                    type="checkbox"
-                    checked={isAllVisibleSelected}
-                    onChange={toggleSelectAll}
-                    className="rounded border-ink-300 text-brand-600 focus:ring-brand-500 cursor-pointer h-4 w-4"
-                    title="Select all visible employees"
-                    aria-label="Select all visible employees"
-                  />
-                </th>
                 <th>Employee</th>
                 <th>Payable Days</th>
                 <th>Gross Pay</th>
@@ -638,27 +538,10 @@ export function PayrollTable({
                 const salaryValues = getSalaryValues(employee);
                 const breakdown = computeSalary(salaryValues);
                 const isTooltipOpen = activeTooltipId === employee.id;
-                const isSelected = selectedIds.has(employee.id);
                 const isThisGenerating = generatingSingleId === employee.id;
 
                 return (
-                  <tr
-                    key={employee.id}
-                    className={`transition-colors ${
-                      isSelected ? "bg-brand-50/60" : "hover:bg-brand-50/30"
-                    }`}
-                  >
-                    {/* Checkbox Column */}
-                    <td className="w-10 px-3 text-center align-middle">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelect(employee.id)}
-                        className="rounded border-ink-300 text-brand-600 focus:ring-brand-500 cursor-pointer h-4 w-4"
-                        aria-label={`Select ${employee.firstName} ${employee.lastName}`}
-                      />
-                    </td>
-
+                  <tr key={employee.id} className="transition-colors hover:bg-brand-50/30">
                     {/* Employee Identity */}
                     <td>
                       <Link
