@@ -101,6 +101,7 @@ export function Modal({
       <button
         ref={triggerRef}
         type="button"
+        suppressHydrationWarning
         className={triggerClassName}
         onClick={() => setOpen(true)}
       >
@@ -126,6 +127,7 @@ export function Modal({
               </h2>
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => setOpen(false)}
                 className="rounded p-1 text-ink-400 transition hover:bg-ink-100 hover:text-ink-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                 aria-label="Close"
