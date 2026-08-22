@@ -7,12 +7,20 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { DEFAULT_LEAVE_TYPES } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { generateLoginId, uniqueCompanyCode } from "@/lib/ids";
+import { generateLoginId, generateToken, uniqueCompanyCode } from "@/lib/ids";
 import { createSession, destroySession } from "@/lib/session";
 import { changePasswordSchema, fieldErrors, signInSchema, signUpSchema } from "@/lib/validations";
 import { failure, success, type ActionState } from "@/lib/action-state";
 
 const read = (form: FormData, key: string) => (form.get(key) as string | null) ?? undefined;
+
+/**
+ * A real bcrypt hash of a value nobody can supply, compared against when no
+ * account matches. Comparing against a malformed hash returns in microseconds
+ * while a genuine comparison costs tens of milliseconds, and that gap is enough
+ * to enumerate valid Login IDs by response time alone.
+ */
+const ABSENT_ACCOUNT_HASH = bcrypt.hashSync(generateToken(16), 10);
 
 /**
  * Registers a company and its first administrator.
@@ -112,13 +120,11 @@ export async function signInAction(_prev: ActionState, form: FormData): Promise<
     },
   });
 
-  // One message for both branches so the form cannot be used to discover valid accounts.
+  // One message for both branches so the form cannot be used to discover valid
+  // accounts, and one comparison either way so the timing cannot either.
   const invalid = failure("Incorrect Login ID or password.");
-  if (!employee) {
-    await bcrypt.compare(password, "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinv");
-    return invalid;
-  }
-  if (!(await bcrypt.compare(password, employee.passwordHash))) return invalid;
+  const matches = await bcrypt.compare(password, employee?.passwordHash ?? ABSENT_ACCOUNT_HASH);
+  if (!employee || !matches) return invalid;
   if (employee.status !== "ACTIVE") {
     return failure("This account is inactive. Contact your HR officer.");
   }
