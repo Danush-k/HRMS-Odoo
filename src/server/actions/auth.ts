@@ -23,6 +23,19 @@ const read = (form: FormData, key: string) => (form.get(key) as string | null) ?
 const ABSENT_ACCOUNT_HASH = bcrypt.hashSync(generateToken(16), 10);
 
 /**
+ * Confines a post-sign-in redirect to this application. Anything that is not a
+ * plain absolute path falls back, so "//evil.example", "https://evil.example"
+ * and "/\evil.example" cannot turn the sign-in form into an open redirect.
+ */
+function safeRedirect(target: string | undefined, fallback = "/employees") {
+  if (!target) return fallback;
+  if (!target.startsWith("/")) return fallback;
+  if (target.startsWith("//") || target.startsWith("/\\")) return fallback;
+  if (target.startsWith("/sign-in") || target.startsWith("/sign-up")) return fallback;
+  return target;
+}
+
+/**
  * Registers a company and its first administrator.
  * This is the only self-service registration path — employees are created by
  * an administrator or HR officer and receive a system-generated Login ID.
@@ -106,6 +119,8 @@ export async function signUpAction(_prev: ActionState, form: FormData): Promise<
 }
 
 export async function signInAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const destination = safeRedirect(read(form, "next"));
+
   const parsed = signInSchema.safeParse({
     identifier: read(form, "identifier"),
     password: read(form, "password"),
@@ -136,7 +151,7 @@ export async function signInAction(_prev: ActionState, form: FormData): Promise<
     loginId: employee.loginId,
   });
 
-  redirect(employee.mustChangePassword ? "/first-login" : "/employees");
+  redirect(employee.mustChangePassword ? "/first-login" : destination);
 }
 
 export async function signOutAction() {
