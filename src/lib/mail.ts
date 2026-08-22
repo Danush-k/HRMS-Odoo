@@ -1,16 +1,8 @@
 import "server-only";
 
+import nodemailer from "nodemailer";
 import { env } from "./env";
 
-/**
- * Outbound mail.
- *
- * Sends through Resend when RESEND_API_KEY is configured. Without it, the
- * message is written to the server log with the link spelled out, so the whole
- * verification and reset flow is exercisable in development without an account
- * anywhere. Delivery never blocks the action that triggered it: a bounced
- * provider must not stop an employee being created.
- */
 export type Mail = {
   to: string;
   subject: string;
@@ -47,7 +39,7 @@ function render(mail: Mail) {
 </body></html>`;
 }
 
-function logToConsole(mail: Mail, reason = "RESEND_API_KEY is not configured") {
+function logToConsole(mail: Mail, reason = "SMTP is not configured") {
   const rule = "─".repeat(72);
   console.info(
     [
@@ -66,42 +58,38 @@ function logToConsole(mail: Mail, reason = "RESEND_API_KEY is not configured") {
 }
 
 export async function sendMail(mail: Mail) {
-  const apiKey = env.RESEND_API_KEY || process.env.RESEND_API_KEY;
+  const host = env.SMTP_HOST || process.env.SMTP_HOST;
+  const user = env.SMTP_USER || process.env.SMTP_USER;
+  const pass = env.SMTP_PASS || process.env.SMTP_PASS;
+  const port = parseInt(env.SMTP_PORT || process.env.SMTP_PORT || "587", 10);
 
-  if (!apiKey) {
-    logToConsole(mail, "not sent — RESEND_API_KEY is not configured");
+  if (!host || !user || !pass) {
+    logToConsole(mail, "not sent — SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) not configured");
     return { delivered: false as const, reason: "no-provider" as const };
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Connection: "close",
-      },
-      body: JSON.stringify({
-        from: env.MAIL_FROM || process.env.MAIL_FROM || "Dayflow <onboarding@resend.dev>",
-        to: [mail.to],
-        subject: mail.subject,
-        html: render(mail),
-      }),
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Mail delivery failed:", response.status, errText);
-      logToConsole(mail, `provider error ${response.status} — console fallback`);
-      return { delivered: false as const, reason: "provider-error" as const };
-    }
+    await transporter.sendMail({
+      from: env.MAIL_FROM || process.env.MAIL_FROM || `Dayflow <${user}>`,
+      to: mail.to,
+      subject: mail.subject,
+      html: render(mail),
+    });
 
     return { delivered: true as const, reason: null };
   } catch (error) {
-    console.error("Mail delivery network error (ECONNRESET): Falling back to console log.");
-    logToConsole(mail, "network error ECONNRESET — console link fallback");
+    console.error("Nodemailer SMTP Delivery Error:", error);
+    logToConsole(mail, "SMTP delivery error — console link fallback");
     return { delivered: false as const, reason: "provider-error" as const };
   }
 }
 
 export const appUrl = (path: string) => new URL(path, env.APP_URL).toString();
+
