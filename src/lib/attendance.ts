@@ -1,6 +1,7 @@
 import { HALF_DAY_THRESHOLD_HOURS, type AttendanceStatus } from "./constants";
+import { env } from "./env";
 
-export const STANDARD_WORK_HOURS = Number(process.env.STANDARD_WORK_HOURS ?? 8);
+export const STANDARD_WORK_HOURS = env.STANDARD_WORK_HOURS;
 
 /**
  * Derives the day's status from hours actually worked (SRS 3.4.1).
