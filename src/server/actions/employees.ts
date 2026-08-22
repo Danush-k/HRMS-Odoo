@@ -7,6 +7,7 @@ import { canEditEmployee, isManager, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateLoginId, generateTemporaryPassword } from "@/lib/ids";
 import { employeeCreateSchema, fieldErrors, managerProfileSchema, selfProfileSchema } from "@/lib/validations";
+import { sendVerificationEmail } from "@/lib/verification";
 import { failure, success, type ActionState } from "@/lib/action-state";
 
 const read = (form: FormData, key: string) => (form.get(key) as string | null) ?? undefined;
@@ -85,9 +86,13 @@ export async function createEmployeeAction(_prev: ActionState, form: FormData): 
     })),
   });
 
+  const { delivered } = await sendVerificationEmail(employee, { newAccount: true });
+
   revalidatePath("/employees");
   return success(
-    `${employee.firstName} ${employee.lastName} added.`,
+    `${employee.firstName} ${employee.lastName} added.${
+      delivered ? " A confirmation email is on its way to them." : ""
+    }`,
     `Login ID ${loginId} · temporary password ${temporaryPassword} — share these once, they are not shown again.`,
   );
 }

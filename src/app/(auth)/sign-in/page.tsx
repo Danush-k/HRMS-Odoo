@@ -5,14 +5,20 @@ import { SignInForm } from "./sign-in-form";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-export default function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+
   return (
     <div className="card p-7 shadow-sm">
       <h1 className="text-lg font-semibold text-ink-900">Sign in</h1>
       <p className="mt-1 text-sm text-ink-500">Use the Login ID issued by your HR officer, or your email address.</p>
 
       <div className="mt-6">
-        <SignInForm />
+        <SignInForm next={next} />
       </div>
 
       <p className="mt-6 border-t border-line pt-5 text-center text-sm text-ink-500">
