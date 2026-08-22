@@ -37,10 +37,10 @@ export function ReviewButtons({ requestId }: { requestId: string }) {
           <input type="hidden" name="decision" value="REJECTED" />
         </div>
       ) : (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            className="btn-danger btn-sm"
+            className="btn-secondary btn-sm rounded-lg hover:border-danger/40 hover:bg-danger-soft hover:text-danger transition-all active:scale-[0.98]"
             onClick={() => setRejecting(true)}
             aria-label="Reject this request"
           >
@@ -50,7 +50,7 @@ export function ReviewButtons({ requestId }: { requestId: string }) {
             type="submit"
             name="decision"
             value="APPROVED"
-            className="btn-approve btn-sm"
+            className="btn-primary btn-sm rounded-lg transition-all active:scale-[0.98]"
             aria-label="Approve this request"
           >
             Approve
