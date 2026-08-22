@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { canEditSalary, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { computeSalary } from "@/lib/salary";
+import { allocatedBeforeFixed, computeSalary } from "@/lib/salary";
 import { fieldErrors, salarySchema } from "@/lib/validations";
 import { failure, success, type ActionState } from "@/lib/action-state";
 
@@ -20,6 +20,19 @@ export async function updateSalaryAction(_prev: ActionState, form: FormData): Pr
 
   const target = await db.employee.findFirst({ where: { id: employeeId, companyId: actor.companyId } });
   if (!target) return failure("That employee no longer exists.");
+
+  // Basic, HRA, Standard Allowance, Performance Bonus and LTA together must
+  // leave something for Fixed Allowance to balance with. Past this point the
+  // components would silently total more than the wage instead of matching
+  // it — reject here rather than accept a structure that undercounts itself.
+  const allocated = allocatedBeforeFixed(values);
+  if (allocated > values.monthlyWage) {
+    return failure(
+      `Basic, HRA, Standard Allowance, Bonus and LTA add up to ${allocated.toFixed(2)}, which is more than the ` +
+        `${values.monthlyWage.toFixed(2)} monthly wage. Lower one of the percentages so Fixed Allowance has ` +
+        `something left to balance.`,
+    );
+  }
 
   const preview = computeSalary({ ...values });
   if (preview.netMonthly < 0) {

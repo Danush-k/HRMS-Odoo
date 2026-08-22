@@ -10,14 +10,17 @@ export function SubmitButton({
   children,
   className = "btn-primary",
   pendingLabel,
+  disabled = false,
 }: {
   children: ReactNode;
   className?: string;
   pendingLabel?: string;
+  /** For a client-side check that must block submission even before the pending state exists. */
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" className={className} disabled={pending} aria-busy={pending}>
+    <button type="submit" className={className} disabled={pending || disabled} aria-busy={pending}>
       {pending ? (pendingLabel ?? "Working…") : children}
     </button>
   );

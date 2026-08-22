@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { FormMessage, SubmitButton } from "@/components/ui";
 import { idle } from "@/lib/action-state";
-import { computeSalary, formatCurrency, type SalaryInput } from "@/lib/salary";
+import { allocatedBeforeFixed, computeSalary, formatCurrency, type SalaryInput } from "@/lib/salary";
 import { updateSalaryAction } from "@/server/actions/salary";
 
 export type SalaryValues = SalaryInput & {
@@ -63,6 +63,8 @@ export function SalaryForm({
     setValues((current) => ({ ...current, [key]: next }));
 
   const breakdown = computeSalary(values);
+  const allocated = allocatedBeforeFixed(values);
+  const overAllocated = allocated > values.monthlyWage;
 
   return (
     <form action={action} className="flex flex-col gap-5">
@@ -96,6 +98,13 @@ export function SalaryForm({
               Amounts are derived from the wage. Fixed Allowance balances the structure so the components always total
               exactly the defined wage.
             </p>
+            {overAllocated ? (
+              <p className="mt-3 rounded-md border border-danger/25 bg-danger-soft px-3 py-2 text-sm font-medium text-danger">
+                Basic, HRA, Standard Allowance, Bonus and LTA add up to {formatCurrency(allocated)} — more than the{" "}
+                {formatCurrency(values.monthlyWage)} wage. Fixed Allowance has nothing left to balance with. Lower a
+                percentage before saving.
+              </p>
+            ) : null}
 
             <ul className="mt-4 flex flex-col divide-y divide-line">
               {breakdown.components.map((component) => {
@@ -240,7 +249,9 @@ export function SalaryForm({
 
       {canEdit ? (
         <div className="flex flex-wrap items-center gap-3">
-          <SubmitButton pendingLabel="Saving…">Save salary structure</SubmitButton>
+          <SubmitButton pendingLabel="Saving…" disabled={overAllocated}>
+            Save salary structure
+          </SubmitButton>
           <div className="flex-1">
             <FormMessage state={state} />
           </div>
