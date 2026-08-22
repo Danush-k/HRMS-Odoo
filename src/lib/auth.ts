@@ -8,6 +8,15 @@ import { readSession } from "./session";
 
 export type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 
+/**
+ * Signs every device out for one employee by moving their session cut-off
+ * forward. Callers that want to keep the current device signed in must issue a
+ * fresh session afterwards.
+ */
+export async function revokeSessions(employeeId: string) {
+  await db.employee.update({ where: { id: employeeId }, data: { sessionsValidFrom: new Date() } });
+}
+
 export async function getCurrentUser() {
   const session = await readSession();
   if (!session) return null;
@@ -18,6 +27,11 @@ export async function getCurrentUser() {
   });
 
   if (!employee || employee.status !== "ACTIVE") return null;
+
+  // A session older than the cut-off was issued before a password change or an
+  // explicit revocation. Compared at second precision because that is all the
+  // JWT issued-at claim carries.
+  if (Math.floor(employee.sessionsValidFrom.getTime() / 1000) > session.issuedAt) return null;
 
   return { ...employee, role: employee.role as Role };
 }

@@ -39,6 +39,10 @@ model Employee {
   role               String  @default("EMPLOYEE") // ADMIN | HR | EMPLOYEE
   status             String  @default("ACTIVE") // ACTIVE | INACTIVE
 
+  /// Sessions issued before this instant are refused. Bumping it signs every
+  /// device out at once, which is what a password change has to do.
+  sessionsValidFrom DateTime @default(now())
+
   firstName   String
   lastName    String
   jobPosition String?

@@ -16,6 +16,9 @@ export type SessionPayload = {
   loginId: string;
 };
 
+/** A verified session, carrying the JWT's issued-at claim in seconds. */
+export type VerifiedSession = SessionPayload & { issuedAt: number };
+
 const key = new TextEncoder().encode(env.SESSION_SECRET);
 
 function secret() {
@@ -39,13 +42,14 @@ export async function createSession(payload: SessionPayload) {
   });
 }
 
-export async function readSession(): Promise<SessionPayload | null> {
+export async function readSession(): Promise<VerifiedSession | null> {
   const token = (await cookies()).get(COOKIE_NAME)?.value;
   if (!token) return null;
 
   try {
     const { payload } = await jwtVerify(token, secret());
-    return payload as unknown as SessionPayload;
+    const claims = payload as unknown as SessionPayload & { iat?: number };
+    return { ...claims, issuedAt: claims.iat ?? 0 };
   } catch {
     return null;
   }

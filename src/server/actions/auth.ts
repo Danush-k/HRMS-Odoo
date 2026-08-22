@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { requireUser } from "@/lib/auth";
+import { requireUser, revokeSessions } from "@/lib/auth";
 import { DEFAULT_LEAVE_TYPES } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { generateLoginId, generateToken, uniqueCompanyCode } from "@/lib/ids";
@@ -197,6 +197,16 @@ export async function changePasswordAction(_prev: ActionState, form: FormData): 
     },
   });
 
+  // Every other device is signed out, then this one is given a fresh session so
+  // the person changing the password is not signed out by their own action.
+  await revokeSessions(user.id);
+  await createSession({
+    employeeId: user.id,
+    companyId: user.companyId,
+    role: user.role,
+    loginId: user.loginId,
+  });
+
   revalidatePath("/profile");
-  return success("Password updated.");
+  return success("Password updated. Any other device signed in as you has been signed out.");
 }
