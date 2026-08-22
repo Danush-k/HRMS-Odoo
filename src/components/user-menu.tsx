@@ -38,6 +38,7 @@ export function UserMenu({
     <div className="relative" ref={ref}>
       <button
         type="button"
+        suppressHydrationWarning
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"

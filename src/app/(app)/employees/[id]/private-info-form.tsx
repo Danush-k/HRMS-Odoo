@@ -79,7 +79,7 @@ export function PrivateInfoForm({
               </Select>
             </Field>
             <Field label="Date of Joining" name="dateOfJoining" error={state.errors?.dateOfJoining}>
-              <Input name="dateOfJoining" type="date" defaultValue={values.dateOfJoining} disabled={!isManager} />
+              <Input name="dateOfJoining" type="date" defaultValue={values.dateOfJoining} disabled={true} />
             </Field>
           </div>
         </div>
@@ -108,7 +108,7 @@ export function PrivateInfoForm({
               <Input name="uanNo" defaultValue={values.uanNo} disabled={!isManager} className="field mono" />
             </Field>
             <Field label="Emp Code" name="empCode">
-              <Input name="empCode" defaultValue={values.empCode} disabled={!isManager} className="field mono" />
+              <Input name="empCode" defaultValue={values.empCode} disabled={true} className="field mono" />
             </Field>
           </div>
         </div>
