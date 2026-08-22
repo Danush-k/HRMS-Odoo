@@ -1,10 +1,8 @@
 name: CI Pipeline
 
+# Automatic CI runs are disabled. Trigger manually from GitHub Actions tab if needed.
 on:
-  push:
-    branches: [ main, setup, attendance ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
