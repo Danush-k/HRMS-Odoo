@@ -42,49 +42,69 @@ export function UserMenu({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center rounded-full ring-2 ring-transparent transition hover:ring-white/40"
+        className="group relative flex items-center rounded-full ring-2 ring-white/20 transition-all duration-150 hover:ring-white/80 active:scale-95 focus:outline-none focus:ring-white"
       >
-        <Avatar src={avatar} name={name} size={32} />
+        <Avatar src={avatar} name={name} size={34} />
         <span className="sr-only">Open the account menu</span>
       </button>
 
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-2xl shadow-ink-900/15 animate-in fade-in zoom-in-95 duration-150"
+          className="absolute right-0 z-50 mt-2.5 w-64 overflow-hidden rounded-2xl border border-line/90 bg-surface p-1.5 shadow-2xl shadow-ink-950/15 backdrop-blur-xs transition-all animate-in fade-in zoom-in-95 duration-100"
         >
-          <div className="border-b border-line px-3.5 py-3 mb-1">
-            <p className="truncate text-sm font-bold text-ink-900">{name}</p>
-            <p className="mono mt-0.5 text-xs text-ink-500">{loginId}</p>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span className="inline-flex items-center rounded-md bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-800 border border-brand-200/80 uppercase tracking-wider">
+          {/* User Details Header Card */}
+          <div className="rounded-xl bg-gradient-to-br from-brand-50/80 via-surface to-canvas px-3.5 py-3 border border-brand-100/70 mb-1">
+            <div className="flex items-center gap-2.5">
+              <Avatar src={avatar} name={name} size={36} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-ink-900 leading-snug">{name}</p>
+                <p className="mono mt-0.5 text-[10.5px] text-ink-500 font-medium">{loginId}</p>
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-brand-100/60">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-400">Role</span>
+              <span className="inline-flex items-center rounded-full bg-brand-100/80 px-2 py-0.5 text-[11px] font-bold text-brand-800 border border-brand-200/50">
                 {roleLabel}
               </span>
             </div>
           </div>
 
-          <Link
-            href="/profile"
-            role="menuitem"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-800"
-          >
-            <svg viewBox="0 0 20 20" width="15" height="15" fill="currentColor" className="text-ink-400">
-              <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
-            </svg>
-            <span>My Profile</span>
-          </Link>
+          {/* Navigation Links */}
+          <div className="py-1">
+            <Link
+              href="/profile"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink-800 transition hover:bg-brand-50 hover:text-brand-700 active:bg-brand-100/60"
+            >
+              <span className="grid h-6 w-6 place-items-center rounded-lg bg-brand-50 text-brand-700 border border-brand-100">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </span>
+              <span>My Profile</span>
+            </Link>
+          </div>
 
+          {/* Divider */}
+          <div className="my-1 border-t border-line" />
+
+          {/* Log Out Button in Danger/Red */}
           <form action={signOutAction}>
             <button
               type="submit"
               role="menuitem"
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-danger transition hover:bg-danger-soft hover:text-danger"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-danger transition hover:bg-danger-soft hover:text-danger active:bg-danger-soft/80"
             >
-              <svg viewBox="0 0 20 20" width="15" height="15" fill="currentColor" className="text-danger/70">
-                <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clipRule="evenodd" />
-                <path fillRule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l2.47-2.47a.75.75 0 10-1.06-1.06l-3.75 3.75a.75.75 0 000 1.06l3.75 3.75a.75.75 0 101.06-1.06l-2.47-2.47H18.25A.75.75 0 0019 10z" clipRule="evenodd" />
-              </svg>
+              <span className="grid h-6 w-6 place-items-center rounded-lg bg-danger-soft text-danger border border-danger/20">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </span>
               <span>Log Out</span>
             </button>
           </form>
