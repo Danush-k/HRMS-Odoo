@@ -100,7 +100,7 @@ export default async function EmployeesPage({
         {/* 3.2.1 QUICK ACCESS CARDS GRID */}
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-500 mb-3">Quick Access Dashboard</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
             {/* CARD 1: PROFILE */}
             <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md">
@@ -126,7 +126,7 @@ export default async function EmployeesPage({
               </div>
               <Link
                 href="/profile"
-                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold"
+                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold hover:border-brand-300 hover:text-brand-700"
               >
                 View Full Profile
                 <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
@@ -136,18 +136,18 @@ export default async function EmployeesPage({
             </div>
 
             {/* CARD 2: ATTENDANCE */}
-            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-present/60 hover:shadow-md">
+            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-present">02. Attendance</span>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-present-soft text-present">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-brand-600">02. Attendance</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10" />
                       <polyline points="12 6 12 12 16 14" />
                     </svg>
                   </div>
                 </div>
-                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-present transition-colors">Daily Clock-In</h3>
+                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-brand-600 transition-colors">Daily Clock-In</h3>
                 <p className="mt-1 text-xs text-ink-500">
                   Track your daily work hours, check-in timestamps and logs.
                 </p>
@@ -157,7 +157,7 @@ export default async function EmployeesPage({
               </div>
               <Link
                 href="/attendance"
-                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold"
+                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold hover:border-brand-300 hover:text-brand-700"
               >
                 Attendance History
                 <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
@@ -167,11 +167,11 @@ export default async function EmployeesPage({
             </div>
 
             {/* CARD 3: LEAVE REQUESTS */}
-            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-leave/60 hover:shadow-md">
+            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-leave">03. Time Off</span>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-leave-soft text-leave">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-brand-600">03. Time Off</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                       <line x1="16" y1="2" x2="16" y2="6" />
@@ -180,50 +180,25 @@ export default async function EmployeesPage({
                     </svg>
                   </div>
                 </div>
-                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-leave transition-colors">Leave Balances</h3>
+                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-brand-600 transition-colors">Leave Balances</h3>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {leaveBalances.map((bal) => (
-                    <div key={bal.id} className="rounded bg-brand-50/70 border border-brand-200 px-2 py-1 text-[11px]">
+                    <div key={bal.id} className="rounded-lg bg-brand-50 border border-brand-200/80 px-2.5 py-1 text-[11px] shadow-3xs">
                       <span className="font-semibold text-brand-800">{bal.leaveType.name}: </span>
-                      <span className="font-bold text-brand-600">{bal.allocated - bal.used} days left</span>
+                      <span className="font-bold text-brand-700">{bal.allocated - bal.used} days left</span>
                     </div>
                   ))}
                 </div>
               </div>
               <Link
                 href="/time-off"
-                className="btn-primary mt-5 w-full justify-between text-xs font-semibold"
+                className="btn-secondary mt-5 w-full justify-between text-xs font-semibold hover:border-brand-300 hover:text-brand-700"
               >
                 Apply for Time Off
                 <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
                   <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
                 </svg>
               </Link>
-            </div>
-
-            {/* CARD 4: LOGOUT */}
-            <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-danger/60 hover:shadow-md">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-danger">04. Session</span>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-danger-soft text-danger">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                  </div>
-                </div>
-                <h3 className="mt-3 text-lg font-bold text-ink-900 group-hover:text-danger transition-colors">Sign Out</h3>
-                <p className="mt-1 text-xs text-ink-500">
-                  Signed in as <strong className="font-semibold text-ink-700">{user.loginId}</strong>
-                </p>
-              </div>
-              <form action={signOutAction} className="mt-5">
-                <button type="submit" className="btn-danger w-full justify-center text-xs font-semibold">
-                  Logout Session
-                </button>
-              </form>
             </div>
 
           </div>

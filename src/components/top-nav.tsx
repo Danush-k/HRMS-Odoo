@@ -7,7 +7,7 @@ import { AttendanceWidget } from "./attendance-widget";
 import { UserMenu } from "./user-menu";
 
 const LINKS = [
-  { href: "/employees", label: "Employees" },
+  { href: "/employees", label: "Dashboard" },
   { href: "/attendance", label: "Attendance" },
   { href: "/time-off", label: "Time Off" },
   { href: "/payroll", label: "Payroll" },
