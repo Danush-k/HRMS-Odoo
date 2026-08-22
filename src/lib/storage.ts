@@ -1,9 +1,8 @@
 import fs from "fs/promises";
 import path from "path";
+import { del, put } from "@vercel/blob";
 
-/** L9 — sick-leave certificates are stored on disk, never as base64 in the database. */
-
-export const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "application/pdf"];
+export const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/jpg", "application/pdf"];
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export type SaveFileResult = {
@@ -13,12 +12,25 @@ export type SaveFileResult = {
   name: string;
 };
 
-export async function saveUploadedFile(file: File): Promise<SaveFileResult> {
-  if (!file || typeof file === "string") {
+/**
+ * Checks if Vercel Blob storage is configured via BLOB_READ_WRITE_TOKEN.
+ */
+function isVercelBlobConfigured(): boolean {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+}
+
+/**
+ * Universal file upload handler.
+ * - In production with Vercel Blob token: uploads directly to @vercel/blob.
+ * - In local development: writes file to `public/uploads/${folder}/`.
+ */
+export async function saveUploadedFile(file: File, folder = "documents"): Promise<SaveFileResult> {
+  if (!file || typeof file === "string" || !(file instanceof Blob)) {
     throw new Error("No file was uploaded.");
   }
 
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+  const mime = file.type?.toLowerCase();
+  if (!mime || (!ALLOWED_MIME_TYPES.includes(mime) && !mime.startsWith("image/"))) {
     throw new Error("Invalid file type. Only PNG, JPEG, and PDF files are allowed.");
   }
 
@@ -32,11 +44,25 @@ export async function saveUploadedFile(file: File): Promise<SaveFileResult> {
 
   // Generate a unique, filesystem-safe filename.
   const timestamp = Date.now();
-  const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_").slice(-100);
+  const safeName = (file.name || "document").replace(/[^a-zA-Z0-9.-]/g, "_").slice(-100);
   const fileName = `${timestamp}_${safeName}`;
 
-  // Local storage directory under public/uploads/certificates.
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "certificates");
+  if (isVercelBlobConfigured()) {
+    // Vercel Blob Storage mode
+    const blobPath = `${folder}/${fileName}`;
+    const blob = await put(blobPath, file, { access: "public" });
+
+    return {
+      fileUrl: blob.url,
+      fileSize: file.size,
+      mimeType: file.type || "application/octet-stream",
+      name: file.name || safeName,
+    };
+  }
+
+  // Local filesystem mode: store under public/uploads/<folder>/
+  const sanitizedFolder = folder.replace(/[^a-zA-Z0-9_-]/g, "");
+  const uploadDir = path.join(process.cwd(), "public", "uploads", sanitizedFolder);
   await fs.mkdir(uploadDir, { recursive: true });
 
   const filePath = path.join(uploadDir, fileName);
@@ -44,9 +70,34 @@ export async function saveUploadedFile(file: File): Promise<SaveFileResult> {
   await fs.writeFile(filePath, buffer);
 
   return {
-    fileUrl: `/uploads/certificates/${fileName}`,
+    fileUrl: `/uploads/${sanitizedFolder}/${fileName}`,
     fileSize: file.size,
-    mimeType: file.type,
-    name: file.name,
+    mimeType: file.type || "application/octet-stream",
+    name: file.name || safeName,
   };
+}
+
+/**
+ * Universal file deletion handler.
+ * - If the fileUrl is a Vercel Blob URL: deletes via @vercel/blob del().
+ * - If the fileUrl is a local /uploads/ path: unlinks from local filesystem.
+ */
+export async function deleteStoredFile(fileUrl: string): Promise<void> {
+  if (!fileUrl || typeof fileUrl !== "string" || fileUrl.startsWith("data:")) {
+    return;
+  }
+
+  try {
+    if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
+      if (isVercelBlobConfigured()) {
+        await del(fileUrl);
+      }
+    } else if (fileUrl.startsWith("/uploads/")) {
+      const relativePath = fileUrl.replace(/^\/uploads\//, "");
+      const fullPath = path.join(process.cwd(), "public", "uploads", relativePath);
+      await fs.unlink(fullPath).catch(() => {});
+    }
+  } catch (err) {
+    console.error("Failed to delete stored file:", err);
+  }
 }
