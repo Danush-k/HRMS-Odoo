@@ -91,6 +91,7 @@ model Employee {
   reviewedRequests LeaveRequest[] @relation("Reviewer")
   leaveBalances    LeaveBalance[]
   tokens           VerificationToken[]
+  documents        Document[]
 
   @@index([companyId])
 }
@@ -219,4 +220,22 @@ model LoginAttempt {
 
   @@index([identifier, createdAt])
   @@index([ip, createdAt])
+}
+
+/// An employee document (Offer Letter, Identity, Certificates, etc.).
+model Document {
+  id         String   @id @default(cuid())
+  employeeId String
+  name       String
+  type       String   // e.g. "Identity", "Employment", "Contract", "Other"
+  fileData   String   // data URL or base64
+  fileType   String   // e.g. "application/pdf", "image/png", "image/jpeg"
+  fileSize   Int      // bytes
+  uploadedBy String   @default("EMPLOYEE") // EMPLOYEE | HR | ADMIN
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
 }

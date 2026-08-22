@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { MANAGER_ROLES, type Role } from "./constants";
 import { db } from "./db";
-import { readSession } from "./session";
+import { destroySession, readSession } from "./session";
 
 export type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 
@@ -26,7 +26,14 @@ export async function getCurrentUser() {
     include: { company: true },
   });
 
-  if (!employee || employee.status !== "ACTIVE") return null;
+  if (!employee || employee.status !== "ACTIVE") {
+    try {
+      await destroySession();
+    } catch {
+      // Ignore if headers are already read-only
+    }
+    return null;
+  }
 
   // A session older than the cut-off was issued before a password change or an
   // explicit revocation. Compared at second precision because that is all the
@@ -72,6 +79,39 @@ export function canViewSalary(viewer: { id: string; role: Role }, targetId: stri
  */
 export function canViewPrivateInfo(viewer: { id: string; role: Role }, targetId: string) {
   return isManager(viewer.role) || viewer.id === targetId;
+}
+
+/**
+ * Documents are visible to managers for anyone, and to an employee for themselves only.
+ * No unauthorized employee ever sees a colleague's documents.
+ */
+export function canViewDocuments(viewer: { id: string; role: Role }, targetId: string) {
+  return isManager(viewer.role) || viewer.id === targetId;
+}
+
+/**
+ * Upload permissions:
+ * - Employee can upload their own documents (targetId === viewer.id).
+ * - Managers (ADMIN and HR) can upload documents for any employee.
+ */
+export function canUploadDocuments(viewer: { id: string; role: Role }, targetId: string) {
+  return isManager(viewer.role) || viewer.id === targetId;
+}
+
+/**
+ * Delete permissions:
+ * - Employee can delete their own documents (targetEmployeeId === viewer.id).
+ * - Managers (ADMIN and HR) can delete documents for any employee.
+ */
+export function canDeleteDocument(viewer: { id: string; role: Role }, targetEmployeeId: string) {
+  return isManager(viewer.role) || viewer.id === targetEmployeeId;
+}
+
+/**
+ * Checks if viewer is a manager (ADMIN or HR) for managing documents across employees.
+ */
+export function canManageDocuments(viewerRole: Role) {
+  return isManager(viewerRole);
 }
 
 /** Only managers may change a salary structure (SRS 3.6.2). */

@@ -17,7 +17,13 @@ export function SubmitButton({
 }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" className={className} disabled={pending} aria-busy={pending}>
+    <button
+      type="submit"
+      className={className}
+      disabled={pending}
+      aria-busy={pending}
+      suppressHydrationWarning
+    >
       {pending ? (pendingLabel ?? "Working…") : children}
     </button>
   );
@@ -66,6 +72,7 @@ export function Input({
       name={name}
       className={`field ${error ? "field-error" : ""}`}
       aria-invalid={error ? true : undefined}
+      suppressHydrationWarning
       {...props}
     />
   );
@@ -78,7 +85,13 @@ export function Select({
   ...props
 }: React.SelectHTMLAttributes<HTMLSelectElement> & { name: string; error?: string }) {
   return (
-    <select id={name} name={name} className={`field ${error ? "field-error" : ""}`} {...props}>
+    <select
+      id={name}
+      name={name}
+      className={`field ${error ? "field-error" : ""}`}
+      suppressHydrationWarning
+      {...props}
+    >
       {children}
     </select>
   );
@@ -89,7 +102,15 @@ export function Textarea({
   error,
   ...props
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { name: string; error?: string }) {
-  return <textarea id={name} name={name} className={`field ${error ? "field-error" : ""}`} {...props} />;
+  return (
+    <textarea
+      id={name}
+      name={name}
+      className={`field ${error ? "field-error" : ""}`}
+      suppressHydrationWarning
+      {...props}
+    />
+  );
 }
 
 export function FormMessage({ state }: { state: ActionState }) {
