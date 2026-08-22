@@ -88,5 +88,6 @@ export async function updateSalaryAction(_prev: ActionState, form: FormData): Pr
   });
 
   revalidatePath(`/employees/${employeeId}`);
+  revalidatePath("/payroll");
   return success("Salary structure updated.");
 }

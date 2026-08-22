@@ -8,6 +8,7 @@ import { isManager, requireUser } from "@/lib/auth";
 import { format, parseMonth } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { formatCurrency } from "@/lib/salary";
+import { PayrollTable } from "./payroll-table";
 import { RunPayrollForm } from "./run-payroll-form";
 
 export const metadata: Metadata = { title: "Payroll" };
@@ -46,12 +47,33 @@ async function ManagerView({ params, companyId }: { params: Search; companyId: s
   const employees = await db.employee.findMany({
     where: { companyId, status: "ACTIVE" },
     orderBy: { firstName: "asc" },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      loginId: true,
+      avatar: true,
+      jobPosition: true,
+      salary: {
+        select: {
+          monthlyWage: true,
+          workingDaysPerWeek: true,
+          breakHours: true,
+          basicPercent: true,
+          hraPercentOfBasic: true,
+          standardAllowancePercent: true,
+          performanceBonusPercent: true,
+          ltaPercent: true,
+          pfPercent: true,
+          professionalTax: true,
+        },
+      },
+    },
   });
 
   const payslips = await db.payslip.findMany({
     where: { periodYear: year, periodMonth: monthNumber, employee: { companyId } },
   });
-  const byEmployee = new Map(payslips.map((p) => [p.employeeId, p]));
 
   const generatedCount = payslips.length;
   const totalNet = payslips.reduce((sum, p) => sum + p.netPay, 0);
@@ -74,79 +96,7 @@ async function ManagerView({ params, companyId }: { params: Search; companyId: s
       {employees.length === 0 ? (
         <EmptyState title="No employees" description="Add employees before payroll can be run." />
       ) : (
-        <div className="table-wrap">
-          <table className="grid-table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Payable days</th>
-                <th>Gross</th>
-                <th>Deductions</th>
-                <th>Net pay</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((employee) => {
-                const payslip = byEmployee.get(employee.id);
-                return (
-                  <tr key={employee.id}>
-                    <td>
-                      <Link href={`/employees/${employee.id}`} className="flex items-center gap-2.5 hover:text-brand-700">
-                        <Avatar src={employee.avatar} name={`${employee.firstName} ${employee.lastName}`} size={28} />
-                        <span>
-                          <span className="block font-medium">
-                            {employee.firstName} {employee.lastName}
-                          </span>
-                          <span className="mono block text-[11px] text-ink-400">{employee.loginId}</span>
-                        </span>
-                      </Link>
-                    </td>
-                    {payslip ? (
-                      <>
-                        <td className="num">
-                          {payslip.payableDays} / {payslip.totalWorkingDays}
-                        </td>
-                        <td className="mono">{formatCurrency(payslip.grossMonthly)}</td>
-                        <td className="mono text-danger">− {formatCurrency(payslip.totalDeductions)}</td>
-                        <td className="mono font-semibold text-present">{formatCurrency(payslip.netPay)}</td>
-                        <td className="text-right">
-                          <div className="flex items-center justify-end gap-2.5">
-                            <Link href={`/payroll/${payslip.id}`} className="text-sm font-medium text-brand-600 hover:underline">
-                              View
-                            </Link>
-                            <span className="text-ink-300">·</span>
-                            <Link
-                              href={`/employees/${employee.id}?tab=salary`}
-                              className="text-xs font-medium text-ink-600 hover:text-brand-700 hover:underline"
-                              title="Edit salary structure"
-                            >
-                              Edit Salary
-                            </Link>
-                          </div>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td colSpan={4} className="text-sm text-ink-400">
-                          Not yet generated
-                        </td>
-                        <td className="text-right">
-                          <Link
-                            href={`/employees/${employee.id}?tab=salary`}
-                            className="btn-secondary btn-sm inline-flex items-center gap-1"
-                          >
-                            Set up salary
-                          </Link>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <PayrollTable employees={employees} payslips={payslips} />
       )}
     </>
   );

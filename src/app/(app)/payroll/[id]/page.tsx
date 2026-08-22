@@ -7,6 +7,7 @@ import { isManager, requireUser } from "@/lib/auth";
 import { format } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { formatCurrency, type SalaryComponent } from "@/lib/salary";
+import { PayslipHeaderActions } from "./payslip-header-actions";
 
 export const metadata: Metadata = { title: "Payslip" };
 
@@ -17,7 +18,17 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
   const payslip = await db.payslip.findFirst({
     where: { id, employee: { companyId: viewer.companyId } },
     include: {
-      employee: { select: { id: true, firstName: true, lastName: true, loginId: true, avatar: true, jobPosition: true } },
+      employee: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          loginId: true,
+          avatar: true,
+          jobPosition: true,
+          salary: true,
+        },
+      },
       generatedBy: { select: { firstName: true, lastName: true } },
     },
   });
@@ -36,15 +47,7 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
           ← Back to Payroll
         </Link>
         {isManager(viewer.role) ? (
-          <Link
-            href={`/employees/${payslip.employee.id}?tab=salary`}
-            className="btn-secondary btn-sm inline-flex items-center gap-1.5 shadow-xs"
-          >
-            <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
-              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-            </svg>
-            Edit Salary Structure
-          </Link>
+          <PayslipHeaderActions employee={payslip.employee} />
         ) : null}
       </div>
 
