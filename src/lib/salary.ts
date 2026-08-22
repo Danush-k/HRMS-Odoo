@@ -42,7 +42,7 @@ export type SalaryBreakdown = {
   ctcMonthly: number;
 };
 
-const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+export const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
 /**
  * Basic plus every percent-of-basic component, before Fixed Allowance. Fixed
