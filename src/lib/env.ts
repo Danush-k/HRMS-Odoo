@@ -30,6 +30,7 @@ const schema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().optional(),
+  APP_ENV: z.string().optional().default("test"),
 
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
