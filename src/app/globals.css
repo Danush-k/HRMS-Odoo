@@ -1,0 +1,180 @@
+@import "tailwindcss";
+
+/* --------------------------------------------------------------------------
+   Dayflow design tokens
+   Plum brand carried from the product wireframes, on a warm-neutral canvas.
+   IBM Plex Sans for interface text, IBM Plex Mono for identifiers and figures.
+   -------------------------------------------------------------------------- */
+@theme {
+  --color-brand-50: #f7f0f5;
+  --color-brand-100: #ecdce7;
+  --color-brand-200: #dcbfd3;
+  --color-brand-300: #c49bb9;
+  --color-brand-400: #a6739a;
+  --color-brand-500: #8e4f80;
+  --color-brand-600: #7a3e6e;
+  --color-brand-700: #5f2f56;
+  --color-brand-800: #47223f;
+  --color-brand-900: #331730;
+
+  --color-ink-900: #241e23;
+  --color-ink-800: #362f35;
+  --color-ink-700: #4a4249;
+  --color-ink-600: #5c545a;
+  --color-ink-500: #756c73;
+  --color-ink-400: #948b92;
+  --color-ink-300: #b9b1b7;
+  --color-ink-200: #dcd6da;
+  --color-ink-100: #ece8ea;
+
+  --color-canvas: #f6f5f7;
+  --color-surface: #ffffff;
+  --color-line: #e4dfe3;
+
+  --color-present: #15803d;
+  --color-present-soft: #dcfce7;
+  --color-absent: #b45309;
+  --color-absent-soft: #fef3c7;
+  --color-leave: #0369a1;
+  --color-leave-soft: #e0f2fe;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fdeceb;
+
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+
+  --radius-card: 10px;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Component primitives
+   -------------------------------------------------------------------------- */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold
+         transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@utility field {
+  @apply w-full rounded-md border border-ink-200 bg-surface px-3 py-2 text-sm text-ink-900
+         placeholder:text-ink-300 transition-colors
+         focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25
+         disabled:cursor-not-allowed disabled:bg-ink-100 disabled:text-ink-500;
+}
+
+@layer components {
+  .card {
+    @apply rounded-[10px] border border-line bg-surface;
+  }
+
+  .label {
+    @apply block text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-500;
+  }
+
+  .field-error {
+    @apply border-danger focus:border-danger focus:ring-danger/20;
+  }
+
+  .hint {
+    @apply text-xs text-ink-500;
+  }
+
+  .error-text {
+    @apply text-xs font-medium text-danger;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  }
+
+  .btn-secondary {
+    @apply btn border border-ink-200 bg-surface text-ink-800 hover:border-ink-300 hover:bg-ink-100;
+  }
+
+  .btn-ghost {
+    @apply btn text-brand-600 hover:bg-brand-50;
+  }
+
+  .btn-danger {
+    @apply btn bg-danger text-white hover:brightness-90;
+  }
+
+  .btn-approve {
+    @apply btn bg-present text-white hover:brightness-90;
+  }
+
+  .btn-sm {
+    @apply px-2.5 py-1 text-xs;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold;
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .table-wrap {
+    @apply overflow-x-auto rounded-[10px] border border-line bg-surface;
+  }
+
+  .grid-table {
+    @apply w-full min-w-[640px] border-collapse text-sm;
+  }
+
+  .grid-table thead th {
+    @apply border-b border-line bg-ink-100/60 px-4 py-2.5 text-left text-[11px] font-semibold
+           uppercase tracking-[0.06em] text-ink-500;
+  }
+
+  .grid-table tbody td {
+    @apply border-b border-line px-4 py-3 align-middle text-ink-800;
+  }
+
+  .grid-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .grid-table tbody tr:hover {
+    @apply bg-brand-50/50;
+  }
+
+  .section-title {
+    @apply text-[13px] font-semibold uppercase tracking-[0.07em] text-ink-500;
+  }
+}

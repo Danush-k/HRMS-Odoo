@@ -1,0 +1,184 @@
+// Dayflow HRMS — data model
+//
+// SQLite is used for local development so the project runs with zero setup.
+// To move to PostgreSQL, change `provider` to "postgresql", point DATABASE_URL
+// at your instance and run `prisma db push`. No model changes are required.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A tenant. Created during sign-up along with its first administrator.
+model Company {
+  id                 String   @id @default(cuid())
+  name               String
+  code               String   @unique
+  logo               String?
+  workingDaysPerWeek Int      @default(5)
+  standardWorkHours  Float    @default(8)
+  createdAt          DateTime @default(now())
+
+  employees  Employee[]
+  leaveTypes LeaveType[]
+}
+
+/// A person. Also the authentication principal — there is no separate user table,
+/// which keeps the login identity and the HR record from drifting apart.
+model Employee {
+  id                 String  @id @default(cuid())
+  companyId          String
+  loginId            String  @unique
+  email              String  @unique
+  passwordHash       String
+  mustChangePassword Boolean @default(true)
+  role               String  @default("EMPLOYEE") // ADMIN | HR | EMPLOYEE
+  status             String  @default("ACTIVE") // ACTIVE | INACTIVE
+
+  firstName   String
+  lastName    String
+  jobPosition String?
+  department  String?
+  location    String?
+  mobile      String?
+  avatar      String?
+  managerId   String?
+
+  // Private information
+  dateOfBirth     DateTime?
+  residingAddress String?
+  nationality     String?
+  personalEmail   String?
+  gender          String?
+  maritalStatus   String?
+  dateOfJoining   DateTime  @default(now())
+
+  // Bank details
+  accountNumber String?
+  bankName      String?
+  ifscCode      String?
+  panNo         String?
+  uanNo         String?
+  empCode       String?
+
+  // Resume
+  about          String?
+  loveAboutJob   String?
+  interests      String?
+  skills         String?
+  certifications String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  manager          Employee?      @relation("Reports", fields: [managerId], references: [id], onDelete: SetNull)
+  reports          Employee[]     @relation("Reports")
+  salary           Salary?
+  attendances      Attendance[]
+  leaveRequests    LeaveRequest[] @relation("Requester")
+  reviewedRequests LeaveRequest[] @relation("Reviewer")
+  leaveBalances    LeaveBalance[]
+
+  @@index([companyId])
+}
+
+/// Salary structure. Percentages are stored, amounts are always derived, so a
+/// change to the monthly wage can never leave the components stale.
+model Salary {
+  id         String @id @default(cuid())
+  employeeId String @unique
+
+  monthlyWage              Float @default(0)
+  workingDaysPerWeek       Int   @default(5)
+  breakHours               Float @default(1)
+  basicPercent             Float @default(50)
+  hraPercentOfBasic        Float @default(50)
+  standardAllowancePercent Float @default(16.67)
+  performanceBonusPercent  Float @default(8.33)
+  ltaPercent               Float @default(8.33)
+  pfPercent                Float @default(12)
+  professionalTax          Float @default(200)
+
+  updatedAt DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model LeaveType {
+  id                 String  @id @default(cuid())
+  companyId          String
+  name               String
+  code               String // PAID | SICK | UNPAID
+  isPaid             Boolean @default(true)
+  defaultDays        Float   @default(0)
+  requiresAttachment Boolean @default(false)
+  colour             String  @default("#7A3E8F")
+
+  company  Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  requests LeaveRequest[]
+  balances LeaveBalance[]
+
+  @@unique([companyId, code])
+}
+
+model LeaveBalance {
+  id          String @id @default(cuid())
+  employeeId  String
+  leaveTypeId String
+  year        Int
+  allocated   Float  @default(0)
+  used        Float  @default(0)
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, leaveTypeId, year])
+}
+
+model LeaveRequest {
+  id          String   @id @default(cuid())
+  employeeId  String
+  leaveTypeId String
+  startDate   DateTime
+  endDate     DateTime
+  days        Float
+  remarks     String?
+  attachment  String?
+  status      String   @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+
+  reviewerId    String?
+  reviewComment String?
+  reviewedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  employee  Employee  @relation("Requester", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewer  Employee? @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+/// One row per employee per day. The unique constraint is what makes
+/// check-in idempotent — a double click cannot create a second record.
+model Attendance {
+  id            String    @id @default(cuid())
+  employeeId    String
+  date          DateTime
+  checkIn       DateTime?
+  checkOut      DateTime?
+  workedMinutes Int       @default(0)
+  status        String    @default("ABSENT") // PRESENT | ABSENT | HALF_DAY | LEAVE
+  note          String?
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([date])
+}

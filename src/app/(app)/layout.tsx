@@ -1,0 +1,36 @@
+import { redirect } from "next/navigation";
+
+import { TopNav } from "@/components/top-nav";
+import { requireUser } from "@/lib/auth";
+import { ROLE_LABEL } from "@/lib/constants";
+import { dayKey } from "@/lib/dates";
+import { db } from "@/lib/db";
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const user = await requireUser();
+  if (user.mustChangePassword) redirect("/first-login");
+
+  const today = await db.attendance.findUnique({
+    where: { employeeId_date: { employeeId: user.id, date: dayKey(new Date()) } },
+  });
+
+  const openSince = today?.checkIn && !today.checkOut ? today.checkIn.toISOString() : null;
+
+  return (
+    <div className="min-h-screen">
+      <TopNav
+        companyName={user.company.name}
+        companyLogo={user.company.logo}
+        checkedInSince={openSince}
+        onLeaveToday={today?.status === "LEAVE"}
+        user={{
+          name: `${user.firstName} ${user.lastName}`,
+          loginId: user.loginId,
+          roleLabel: ROLE_LABEL[user.role],
+          avatar: user.avatar,
+        }}
+      />
+      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">{children}</main>
+    </div>
+  );
+}
