@@ -101,6 +101,8 @@ async function ManagerView({ params, companyId }: { params: Search; companyId: s
           employees={employees}
           payslips={payslips}
           periodLabel={format(month, "MMMM yyyy")}
+          year={year}
+          month={monthNumber}
         />
       )}
     </>

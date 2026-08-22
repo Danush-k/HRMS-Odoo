@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui";
 import { formatCurrency, computeSalary } from "@/lib/salary";
 import { EditSalaryModal, type SalaryValues } from "@/components/edit-salary-drawer";
+import { generateSinglePayslipAction, generateSelectedPayrollAction } from "@/server/actions/payroll";
 
 export type PayrollEmployee = {
   id: string;
@@ -59,10 +60,14 @@ export function PayrollTable({
   employees,
   payslips,
   periodLabel = "This Month",
+  year = new Date().getFullYear(),
+  month = new Date().getMonth() + 1,
 }: {
   employees: PayrollEmployee[];
   payslips: PayrollPayslip[];
   periodLabel?: string;
+  year?: number;
+  month?: number;
 }) {
   const router = useRouter();
   const byEmployee = useMemo(() => new Map(payslips.map((p) => [p.employeeId, p])), [payslips]);
@@ -73,6 +78,12 @@ export function PayrollTable({
   const [sortBy, setSortBy] = useState<SortOption>("NAME_ASC");
   const [editingEmployee, setEditingEmployee] = useState<PayrollEmployee | null>(null);
   const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
+
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isGenerating, startGenerating] = useTransition();
+  const [actionFeedback, setActionFeedback] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [generatingSingleId, setGeneratingSingleId] = useState<string | null>(null);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +97,14 @@ export function PayrollTable({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Clear toast feedback after 4 seconds
+  useEffect(() => {
+    if (actionFeedback) {
+      const timer = setTimeout(() => setActionFeedback(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionFeedback]);
 
   const getSalaryValues = (emp: PayrollEmployee): SalaryValues => {
     if (!emp.salary) return DEFAULT_SALARY;
@@ -179,6 +198,59 @@ export function PayrollTable({
 
   const pendingCount = employees.length - generatedCount;
 
+  // Checkbox Selection Helpers
+  const isAllVisibleSelected =
+    filteredEmployees.length > 0 && filteredEmployees.every((e) => selectedIds.has(e.id));
+
+  const toggleSelectAll = () => {
+    if (isAllVisibleSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredEmployees.map((e) => e.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Generate single employee payroll
+  const handleGenerateSingle = (empId: string, empName: string) => {
+    setGeneratingSingleId(empId);
+    startGenerating(async () => {
+      const res = await generateSinglePayslipAction(empId, year, month);
+      setGeneratingSingleId(null);
+      if (res.ok) {
+        setActionFeedback({ text: `Generated payslip for ${empName}.`, type: "success" });
+        router.refresh();
+      } else {
+        setActionFeedback({ text: res.message || "Failed to generate payslip.", type: "error" });
+      }
+    });
+  };
+
+  // Generate payroll for selected employees
+  const handleGenerateSelected = () => {
+    if (selectedIds.size === 0) return;
+
+    const ids = Array.from(selectedIds);
+    startGenerating(async () => {
+      const res = await generateSelectedPayrollAction(ids, year, month);
+      if (res.ok) {
+        setActionFeedback({ text: res.message || `Generated ${ids.length} payslips.`, type: "success" });
+        setSelectedIds(new Set());
+        router.refresh();
+      } else {
+        setActionFeedback({ text: res.message || "Failed to generate selected payslips.", type: "error" });
+      }
+    });
+  };
+
   // Export payroll summary to CSV
   const handleExportCSV = () => {
     const headers = [
@@ -221,7 +293,38 @@ export function PayrollTable({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 relative">
+      {/* Action Notification Toast */}
+      {actionFeedback ? (
+        <div
+          className={`flex items-center justify-between gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold shadow-md animate-in fade-in slide-in-from-top-2 duration-150 ${
+            actionFeedback.type === "success"
+              ? "bg-present-soft border border-present/30 text-present"
+              : "bg-danger-soft border border-danger/30 text-danger"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {actionFeedback.type === "success" ? (
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span>{actionFeedback.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionFeedback(null)}
+            className="text-ink-500 hover:text-ink-800"
+          >
+            ✕
+          </button>
+        </div>
+      ) : null}
+
       {/* Control Bar: Live Search with Autocomplete, Filters, Sorting & Export */}
       <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -311,7 +414,14 @@ export function PayrollTable({
                                 {formatCurrency(p.netPay)}
                               </span>
                             ) : (
-                              <span className="text-[10px] text-ink-400">Pending</span>
+                              <button
+                                type="button"
+                                onClick={() => handleGenerateSingle(emp.id, `${emp.firstName} ${emp.lastName}`)}
+                                disabled={isGenerating}
+                                className="btn-approve btn-sm text-[10px] py-0.5 px-2 rounded-md"
+                              >
+                                ⚡ Generate
+                              </button>
                             )}
                             <button
                               type="button"
@@ -319,7 +429,7 @@ export function PayrollTable({
                                 setIsSearchFocused(false);
                                 setEditingEmployee(emp);
                               }}
-                              className="btn-secondary btn-sm text-[10px] py-1 px-2 rounded-md"
+                              className="btn-secondary btn-sm text-[10px] py-0.5 px-2 rounded-md"
                               title="Edit salary structure"
                             >
                               Edit
@@ -418,6 +528,56 @@ export function PayrollTable({
         </div>
       </div>
 
+      {/* Floating Bulk Action Bar when 1 or more employees are checked */}
+      {selectedIds.size > 0 ? (
+        <div className="sticky top-4 z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-300 bg-brand-700 p-3.5 text-white shadow-xl animate-in slide-in-from-top duration-150">
+          <div className="flex items-center gap-3">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+              {selectedIds.size}
+            </span>
+            <div>
+              <p className="text-xs font-semibold">
+                {selectedIds.size} {selectedIds.size === 1 ? "employee" : "employees"} selected
+              </p>
+              <p className="text-[11px] text-white/70">
+                Run payroll generation for only these selected individuals
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={handleGenerateSelected}
+              disabled={isGenerating}
+              className="rounded-lg bg-white px-4 py-1.5 text-xs font-bold text-brand-800 hover:bg-brand-50 shadow-xs transition inline-flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <>
+                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  <span>Generating…</span>
+                </>
+              ) : (
+                <>
+                  <span>⚡</span>
+                  <span>Run Payroll for Selected ({selectedIds.size})</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {/* Main Table View */}
       {filteredEmployees.length === 0 ? (
         <div className="rounded-2xl border border-line bg-surface p-12 text-center">
@@ -454,6 +614,16 @@ export function PayrollTable({
           <table className="grid-table">
             <thead>
               <tr>
+                <th className="w-10 px-3 text-center">
+                  <input
+                    type="checkbox"
+                    checked={isAllVisibleSelected}
+                    onChange={toggleSelectAll}
+                    className="rounded border-ink-300 text-brand-600 focus:ring-brand-500 cursor-pointer h-4 w-4"
+                    title="Select all visible employees"
+                    aria-label="Select all visible employees"
+                  />
+                </th>
                 <th>Employee</th>
                 <th>Payable Days</th>
                 <th>Gross Pay</th>
@@ -468,9 +638,28 @@ export function PayrollTable({
                 const salaryValues = getSalaryValues(employee);
                 const breakdown = computeSalary(salaryValues);
                 const isTooltipOpen = activeTooltipId === employee.id;
+                const isSelected = selectedIds.has(employee.id);
+                const isThisGenerating = generatingSingleId === employee.id;
 
                 return (
-                  <tr key={employee.id} className="transition-colors hover:bg-brand-50/30">
+                  <tr
+                    key={employee.id}
+                    className={`transition-colors ${
+                      isSelected ? "bg-brand-50/60" : "hover:bg-brand-50/30"
+                    }`}
+                  >
+                    {/* Checkbox Column */}
+                    <td className="w-10 px-3 text-center align-middle">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(employee.id)}
+                        className="rounded border-ink-300 text-brand-600 focus:ring-brand-500 cursor-pointer h-4 w-4"
+                        aria-label={`Select ${employee.firstName} ${employee.lastName}`}
+                      />
+                    </td>
+
+                    {/* Employee Identity */}
                     <td>
                       <Link
                         href={`/employees/${employee.id}`}
@@ -557,12 +746,33 @@ export function PayrollTable({
 
                         <td className="text-right">
                           <div className="flex items-center justify-end gap-2">
+                            {/* Regenerate single payslip */}
+                            <button
+                              type="button"
+                              onClick={() => handleGenerateSingle(employee.id, `${employee.firstName} ${employee.lastName}`)}
+                              disabled={isThisGenerating || isGenerating}
+                              className="btn-ghost btn-sm text-xs font-semibold text-ink-600 hover:text-brand-700 rounded-lg p-1.5"
+                              title="Regenerate this employee's payslip"
+                            >
+                              {isThisGenerating ? (
+                                <svg className="animate-spin h-3.5 w-3.5 text-brand-600" viewBox="0 0 24 24" fill="none">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                </svg>
+                              ) : (
+                                <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                                  <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.451a.75.75 0 000-1.5H4.5a.75.75 0 00-.75.75v3.75a.75.75 0 001.5 0v-2.146l.462.462a7 7 0 0011.712-3.138.75.75 0 00-1.412-.493zM4.688 8.576a5.5 5.5 0 019.201-2.466l.312.311h-2.451a.75.75 0 000 1.5h3.75a.75.75 0 00.75-.75V3.42a.75.75 0 00-1.5 0v2.146l-.462-.462a7 7 0 00-11.712 3.138.75.75 0 001.412.493z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </button>
+
                             <Link
                               href={`/payroll/${payslip.id}`}
                               className="btn-ghost btn-sm text-xs font-semibold text-brand-600 hover:bg-brand-50 rounded-lg"
                             >
                               View
                             </Link>
+
                             <button
                               type="button"
                               onClick={() => setEditingEmployee(employee)}
@@ -583,16 +793,42 @@ export function PayrollTable({
                           Payslip not generated yet for this period
                         </td>
                         <td className="text-right">
-                          <button
-                            type="button"
-                            onClick={() => setEditingEmployee(employee)}
-                            className="btn-secondary btn-sm inline-flex items-center gap-1.5 text-xs rounded-lg shadow-xs"
-                          >
-                            <svg viewBox="0 0 20 20" width="13" height="13" fill="currentColor">
-                              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                            </svg>
-                            <span>Set up salary</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Run single payslip directly */}
+                            <button
+                              type="button"
+                              onClick={() => handleGenerateSingle(employee.id, `${employee.firstName} ${employee.lastName}`)}
+                              disabled={isThisGenerating || isGenerating}
+                              className="btn-approve btn-sm inline-flex items-center gap-1 text-xs rounded-lg shadow-xs"
+                              title="Generate payslip for this employee only"
+                            >
+                              {isThisGenerating ? (
+                                <>
+                                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                  </svg>
+                                  <span>Generating…</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>⚡</span>
+                                  <span>Generate</span>
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setEditingEmployee(employee)}
+                              className="btn-secondary btn-sm inline-flex items-center gap-1.5 text-xs rounded-lg shadow-xs"
+                            >
+                              <svg viewBox="0 0 20 20" width="13" height="13" fill="currentColor">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                              </svg>
+                              <span>Edit Structure</span>
+                            </button>
+                          </div>
                         </td>
                       </>
                     )}
