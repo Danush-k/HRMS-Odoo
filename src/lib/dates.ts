@@ -13,17 +13,26 @@ export { addDays, endOfMonth, format, isWeekend, startOfDay, startOfMonth };
 
 /** Normalises any timestamp to midnight so it can key an attendance row. */
 export function dayKey(date: Date | string) {
-  return startOfDay(new Date(date));
+  const d = new Date(date);
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
 }
 
 export function isoDay(date: Date | string) {
   return format(new Date(date), "yyyy-MM-dd");
 }
 
-/** Weekdays between two dates, inclusive. Weekends are never charged to a leave balance. */
-export function countWorkingDays(start: Date, end: Date) {
+/**
+ * Weekdays between two dates, inclusive. Weekends and company public holidays
+ * (L10) are never charged to a leave balance.
+ */
+export function countWorkingDays(start: Date, end: Date, publicHolidays: Date[] = []) {
   if (end < start) return 0;
-  return eachDayOfInterval({ start: startOfDay(start), end: startOfDay(end) }).filter((d) => !isWeekend(d)).length;
+
+  const holidaySet = new Set(publicHolidays.map((h) => isoDay(h)));
+
+  return eachDayOfInterval({ start: startOfDay(start), end: startOfDay(end) })
+    .filter((d) => !isWeekend(d) && !holidaySet.has(isoDay(d)))
+    .length;
 }
 
 export function workingDaysInMonth(reference: Date) {
@@ -74,8 +83,12 @@ export function parseDay(value: string | undefined, fallback = new Date()) {
   return Number.isNaN(parsed.getTime()) ? startOfDay(fallback) : startOfDay(parsed);
 }
 
-/** Every weekday in a range, normalised to midnight — the days a leave actually consumes. */
-export function eachWorkingDay(start: Date, end: Date) {
+/** Every weekday in a range, normalised to midnight — the days a leave actually consumes (L10: holidays excluded). */
+export function eachWorkingDay(start: Date, end: Date, publicHolidays: Date[] = []) {
   if (end < start) return [];
-  return eachDayOfInterval({ start: startOfDay(start), end: startOfDay(end) }).filter((d) => !isWeekend(d));
+  const holidaySet = new Set(publicHolidays.map((h) => isoDay(h)));
+
+  return eachDayOfInterval({ start: startOfDay(start), end: startOfDay(end) }).filter(
+    (d) => !isWeekend(d) && !holidaySet.has(isoDay(d)),
+  );
 }
