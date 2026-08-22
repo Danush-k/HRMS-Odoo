@@ -102,7 +102,7 @@ export function RunPayrollForm({
       } else {
         const ids = Array.from(selectedIds);
         if (ids.length === 0) {
-          setState({ ok: false, message: "Select at least one employee." });
+          setState({ ok: false, message: "Please select at least one employee." });
           return;
         }
         res = await generateSelectedPayrollAction(ids, year, month);
@@ -153,7 +153,7 @@ export function RunPayrollForm({
               <div>
                 <h2 className="text-base font-bold text-ink-900">Run Payroll — {label}</h2>
                 <p className="hint text-xs text-ink-500 mt-0.5">
-                  Calculate and issue frozen payslips based on attendance & salary structures.
+                  Calculate and finalize monthly payslips based on attendance and salary structures.
                 </p>
               </div>
 
@@ -173,10 +173,10 @@ export function RunPayrollForm({
             {/* Form */}
             <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
               <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
-                {/* Mode Selector */}
+                {/* Processing Scope Selector */}
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-ink-600 mb-2">
-                    Who should be processed?
+                  <p className="text-xs font-semibold uppercase tracking-wider text-ink-600 mb-2.5">
+                    Processing Scope
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     {/* Option 1: All Active Employees */}
@@ -190,17 +190,17 @@ export function RunPayrollForm({
                       }`}
                     >
                       <div className="flex items-center justify-between w-full">
-                        <span className="text-xs font-bold text-ink-900">All Active Roster</span>
+                        <span className="text-xs font-bold text-ink-900">All Active Employees</span>
                         <span className="chip text-[10px] bg-brand-600 text-white font-semibold">
                           {employees.length}
                         </span>
                       </div>
                       <p className="hint text-[11px] text-ink-500 mt-1">
-                        Run for all active company employees at once.
+                        Process payroll for all active team members organization-wide.
                       </p>
                     </button>
 
-                    {/* Option 2: Select Specific People */}
+                    {/* Option 2: Select Specific Employees */}
                     <button
                       type="button"
                       onClick={() => setMode("CUSTOM")}
@@ -211,13 +211,17 @@ export function RunPayrollForm({
                       }`}
                     >
                       <div className="flex items-center justify-between w-full">
-                        <span className="text-xs font-bold text-ink-900">Select Specific</span>
-                        <span className={`chip text-[10px] ${mode === "CUSTOM" ? "bg-brand-700 text-white" : "bg-ink-100 text-ink-600"}`}>
-                          Custom ({selectedIds.size})
+                        <span className="text-xs font-bold text-ink-900">Specific Employees</span>
+                        <span
+                          className={`chip text-[10px] ${
+                            mode === "CUSTOM" ? "bg-brand-700 text-white font-semibold" : "bg-ink-100 text-ink-600"
+                          }`}
+                        >
+                          {selectedIds.size} Selected
                         </span>
                       </div>
                       <p className="hint text-[11px] text-ink-500 mt-1">
-                        Pick individual employees to process.
+                        Select specific individuals or departments to process.
                       </p>
                     </button>
                   </div>
@@ -233,7 +237,7 @@ export function RunPayrollForm({
                           type="text"
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          placeholder="Search employees…"
+                          placeholder="Search by name, ID, role, or department…"
                           className="field py-1.5 pl-8 pr-3 text-xs rounded-lg"
                         />
                         <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-ink-400">
@@ -250,7 +254,7 @@ export function RunPayrollForm({
                       <button
                         type="button"
                         onClick={toggleSelectAll}
-                        className="text-xs font-medium text-brand-700 hover:underline shrink-0"
+                        className="text-xs font-semibold text-brand-700 hover:underline shrink-0"
                       >
                         {isAllSelected ? "Deselect All" : "Select All"}
                       </button>
@@ -259,7 +263,7 @@ export function RunPayrollForm({
                     {/* Scrollable employee checklist */}
                     <div className="max-h-56 overflow-y-auto divide-y divide-line/60 rounded-lg border border-line bg-surface">
                       {filteredEmployees.length === 0 ? (
-                        <p className="p-4 text-center text-xs text-ink-500">No matching employees.</p>
+                        <p className="p-4 text-center text-xs text-ink-500">No matching employees found.</p>
                       ) : (
                         filteredEmployees.map((emp) => {
                           const isChecked = selectedIds.has(emp.id);
@@ -288,8 +292,14 @@ export function RunPayrollForm({
                                 </div>
                               </div>
 
-                              <span className={`text-[10px] font-medium ${isChecked ? "text-brand-700 font-semibold" : "text-ink-400"}`}>
-                                {isChecked ? "Selected" : "Excluded"}
+                              <span
+                                className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                  isChecked
+                                    ? "bg-brand-100 text-brand-800 font-semibold"
+                                    : "bg-ink-100 text-ink-500"
+                                }`}
+                              >
+                                {isChecked ? "Included" : "Excluded"}
                               </span>
                             </label>
                           );
@@ -304,10 +314,10 @@ export function RunPayrollForm({
                 ) : (
                   <div className="rounded-xl border border-line bg-brand-50/50 p-4">
                     <p className="text-xs font-medium text-brand-900">
-                      Processing will compute and freeze payslips for all <strong>{employees.length} active employees</strong> for {label}.
+                      Payroll will be calculated and issued for all <strong>{employees.length} active employees</strong> for {label}.
                     </p>
                     <p className="hint text-[11px] text-brand-700/80 mt-1">
-                      Employees without a salary structure configured will be safely skipped.
+                      Employees without a configured salary structure will be automatically bypassed.
                     </p>
                   </div>
                 )}
@@ -348,13 +358,15 @@ export function RunPayrollForm({
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                         </svg>
-                        <span>Processing…</span>
+                        <span>Processing Payroll…</span>
                       </>
                     ) : (
                       <>
                         <span>⚡</span>
                         <span>
-                          Run Payroll for {mode === "ALL" ? `All (${employees.length})` : `Selected (${selectedIds.size})`}
+                          {mode === "ALL"
+                            ? `Process Payroll (${employees.length} Employees)`
+                            : `Process Payroll (${selectedIds.size} Selected)`}
                         </span>
                       </>
                     )}
