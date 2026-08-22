@@ -76,7 +76,11 @@ export async function sendMail(mail: Mail) {
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Connection: "close",
+      },
       body: JSON.stringify({
         from: process.env.MAIL_FROM ?? "Dayflow <onboarding@resend.dev>",
         to: [mail.to],
@@ -86,13 +90,16 @@ export async function sendMail(mail: Mail) {
     });
 
     if (!response.ok) {
-      console.error("Mail delivery failed:", response.status, await response.text());
+      const errText = await response.text();
+      console.error("Mail delivery failed:", response.status, errText);
+      logToConsole(mail);
       return { delivered: false as const, reason: "provider-error" as const };
     }
 
     return { delivered: true as const, reason: null };
   } catch (error) {
-    console.error("Mail delivery threw:", error);
+    console.error("Mail network socket reset (ECONNRESET): Falling back to console log.");
+    logToConsole(mail);
     return { delivered: false as const, reason: "provider-error" as const };
   }
 }
