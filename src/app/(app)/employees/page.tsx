@@ -101,7 +101,7 @@ export default async function EmployeesPage({
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-500 mb-3">Quick Access Dashboard</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
+
             {/* CARD 1: PROFILE */}
             <div className="card group relative flex flex-col justify-between p-5 transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md">
               <div>
@@ -231,7 +231,7 @@ export default async function EmployeesPage({
 
         {/* RECENT ACTIVITY & ALERTS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
+
           {/* Recent Attendance */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
@@ -329,23 +329,27 @@ export default async function EmployeesPage({
   // Calculate quick metrics for the stat summary cards
   let inOfficeCount = 0;
   let onLeaveCount = 0;
+  let halfDayCount = 0;
 
   const statusMap = new Map<string, "PRESENT" | "LEAVE" | "ABSENT" | "HALF_DAY">();
   for (const row of allTodayAttendance) {
     if (row.status === "LEAVE") {
       statusMap.set(row.employeeId, "LEAVE");
       onLeaveCount++;
+    } else if (row.status === "HALF_DAY") {
+      statusMap.set(row.employeeId, "HALF_DAY");
+      halfDayCount++;
     } else if (row.checkIn && !row.checkOut) {
       statusMap.set(row.employeeId, "PRESENT");
       inOfficeCount++;
-    } else if (row.status === "HALF_DAY" || row.status === "PRESENT") {
-      statusMap.set(row.employeeId, row.status as "PRESENT" | "HALF_DAY");
+    } else if (row.status === "PRESENT") {
+      statusMap.set(row.employeeId, "PRESENT");
       inOfficeCount++;
     } else {
       statusMap.set(row.employeeId, "ABSENT");
     }
   }
-  const absentCount = Math.max(0, totalEmployees - inOfficeCount - onLeaveCount);
+  const absentCount = Math.max(0, totalEmployees - inOfficeCount - onLeaveCount - halfDayCount);
 
   // Fetch pending leave requests for Admin approval widget (SRS 3.2.2)
   const pendingLeaveRequests = await db.leaveRequest.findMany({
@@ -424,6 +428,11 @@ export default async function EmployeesPage({
       .filter(([_, st]) => st === "PRESENT" || st === "HALF_DAY" || st === "LEAVE")
       .map(([id]) => id);
     where.id = { notIn: nonAbsentEmpIds };
+  } else if (status === "HALF_DAY") {
+    const halfDayEmpIds = Array.from(statusMap.entries())
+      .filter(([_, st]) => st === "HALF_DAY")
+      .map(([id]) => id);
+    where.id = { in: halfDayEmpIds };
   }
 
   // P6: Database-level total count and pagination calculation
@@ -457,6 +466,18 @@ export default async function EmployeesPage({
     employees.map((emp) => [emp.id, statusMap.get(emp.id) || "ABSENT"])
   );
 
+  const userAttendanceStatus = statusMap.get(user.id) ?? "ABSENT";
+  const userCheckedIn = userAttendanceStatus === "PRESENT" || userAttendanceStatus === "HALF_DAY";
+  const userOnLeave = userAttendanceStatus === "LEAVE";
+
+  const profileHref = (empId: string) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (status && status !== "ALL") params.set("status", status);
+    const qs = params.toString();
+    return `/employees/${empId}${qs ? `?${qs}` : ""}`;
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {denied ? (
@@ -468,29 +489,48 @@ export default async function EmployeesPage({
         </div>
       ) : null}
 
-      {/* Header Section */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">Admin & HR Dashboard</h1>
-            <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-              {totalEmployees} {totalEmployees === 1 ? "Member" : "Members"}
-            </span>
+      {/* Welcome Header Card for Admin & HR */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-brand-200/80 bg-gradient-to-r from-brand-50 to-surface p-6 shadow-xs">
+        <div className="flex items-center gap-4">
+          <Avatar src={user.avatar} name={`${user.firstName} ${user.lastName}`} size={64} />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-ink-900">Welcome back, {user.firstName}!</h1>
+              <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+                {user.role}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-ink-600">
+              {user.jobPosition || (user.role === "ADMIN" ? "Administrator" : "HR Officer")} • {user.department || user.company.name}
+            </p>
+            <p className="mono mt-1 text-xs text-brand-600 font-semibold">ID: {user.loginId}</p>
           </div>
-          <p className="mt-1 text-sm text-ink-500">
-            Manage employees, inspect attendance, and review leave approvals for <strong className="font-semibold text-ink-700">{user.company.name}</strong>
-          </p>
         </div>
 
-        <Link
-          href="/employees/new"
-          className="btn-primary inline-flex items-center gap-2 shadow-xs transition-transform active:scale-[0.98]"
-        >
-          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
-            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-          </svg>
-          Add Employee
-        </Link>
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg bg-surface p-3 border border-line shadow-2xs">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-500">Attendance Status</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${userCheckedIn ? "bg-present animate-pulse" : userOnLeave ? "bg-leave" : "bg-absent"
+                  }`}
+              />
+              <span className="text-xs font-bold text-ink-900">
+                {userCheckedIn ? "Checked In" : userOnLeave ? "On Leave" : "Not Checked In"}
+              </span>
+            </div>
+          </div>
+
+          <Link
+            href="/employees/new"
+            className="btn-primary inline-flex items-center gap-2 shadow-xs transition-transform active:scale-[0.98] h-[50px] px-4"
+          >
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+              <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+            </svg>
+            Add Employee
+          </Link>
+        </div>
       </div>
 
       {/* Stats Summary Cards */}
@@ -611,46 +651,52 @@ export default async function EmployeesPage({
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "ALL" }).toString()}`}
-            className={`rounded-md px-3 py-1.5 transition-colors ${
-              status === "ALL"
+            className={`rounded-md px-3 py-1.5 transition-colors ${status === "ALL"
                 ? "bg-brand-600 font-semibold text-white shadow-xs"
                 : "bg-surface text-ink-600 hover:bg-ink-100"
-            }`}
+              }`}
           >
             All ({totalEmployees})
           </Link>
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "PRESENT" }).toString()}`}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
-              status === "PRESENT"
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${status === "PRESENT"
                 ? "bg-present font-semibold text-white shadow-xs"
                 : "bg-surface text-ink-600 hover:bg-present-soft hover:text-present"
-            }`}
+              }`}
           >
             <span className={`h-2 w-2 rounded-full ${status === "PRESENT" ? "bg-white" : "bg-present"}`} />
             In Office ({inOfficeCount})
           </Link>
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "LEAVE" }).toString()}`}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
-              status === "LEAVE"
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${status === "LEAVE"
                 ? "bg-leave font-semibold text-white shadow-xs"
                 : "bg-surface text-ink-600 hover:bg-leave-soft hover:text-leave"
-            }`}
+              }`}
           >
             <span className={`h-2 w-2 rounded-full ${status === "LEAVE" ? "bg-white" : "bg-leave"}`} />
             On Leave ({onLeaveCount})
           </Link>
           <Link
             href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "ABSENT" }).toString()}`}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
-              status === "ABSENT"
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${status === "ABSENT"
                 ? "bg-absent font-semibold text-white shadow-xs"
                 : "bg-surface text-ink-600 hover:bg-absent-soft hover:text-absent"
-            }`}
+              }`}
           >
             <span className={`h-2 w-2 rounded-full ${status === "ABSENT" ? "bg-white" : "bg-absent"}`} />
             Absent ({absentCount})
+          </Link>
+          <Link
+            href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), ...(view ? { view } : {}), status: "HALF_DAY" }).toString()}`}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${status === "HALF_DAY"
+                ? "bg-brand-600 font-semibold text-white shadow-xs"
+                : "bg-surface text-ink-600 hover:bg-brand-50 hover:text-brand-700"
+              }`}
+          >
+            <span className={`h-2 w-2 rounded-full ${status === "HALF_DAY" ? "bg-white" : "bg-brand-600"}`} />
+            Half Day ({halfDayCount})
           </Link>
         </div>
 
@@ -664,9 +710,8 @@ export default async function EmployeesPage({
             <Link
               href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "grid", ...(page && page !== "1" ? { page } : {}) }).toString()}`}
               title="Grid View"
-              className={`rounded p-1.5 transition-colors ${
-                view === "grid" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
-              }`}
+              className={`rounded p-1.5 transition-colors ${view === "grid" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
+                }`}
             >
               <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
                 <path fillRule="evenodd" d="M4.25 2A2.25 2.25 0 002 4.25v2.5A2.25 2.25 0 004.25 9h2.5A2.25 2.25 0 009 6.75v-2.5A2.25 2.25 0 006.75 2h-2.5zm0 9A2.25 2.25 0 002 13.25v2.5A2.25 2.25 0 004.25 18h2.5A2.25 2.25 0 009 15.75v-2.5A2.25 2.25 0 006.75 11h-2.5zm9-9A2.25 2.25 0 0011 4.25v2.5A2.25 2.25 0 0013.25 9h2.5A2.25 2.25 0 0018 6.75v-2.5A2.25 2.25 0 0015.75 2h-2.5zm0 9A2.25 2.25 0 0011 13.25v2.5A2.25 2.25 0 0013.25 18h2.5A2.25 2.25 0 0018 15.75v-2.5A2.25 2.25 0 0015.75 11h-2.5z" clipRule="evenodd" />
@@ -675,9 +720,8 @@ export default async function EmployeesPage({
             <Link
               href={`/employees?${new URLSearchParams({ ...(q ? { q } : {}), status, view: "table", ...(page && page !== "1" ? { page } : {}) }).toString()}`}
               title="Table View"
-              className={`rounded p-1.5 transition-colors ${
-                view === "table" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
-              }`}
+              className={`rounded p-1.5 transition-colors ${view === "table" ? "bg-surface text-brand-600 shadow-xs" : "text-ink-500 hover:text-ink-900"
+                }`}
             >
               <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
                 <path fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75a.75.75 0 01-.75-.75zm0-5.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z" clipRule="evenodd" />
@@ -731,7 +775,7 @@ export default async function EmployeesPage({
                   return (
                     <tr key={emp.id} className={`group ${!isActive ? "bg-ink-50/40 opacity-85" : ""}`}>
                       <td>
-                        <Link href={`/employees/${emp.id}`} className="flex items-center gap-3">
+                        <Link href={profileHref(emp.id)} className="flex items-center gap-3">
                           <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={36} />
                           <div>
                             <p className="font-semibold text-ink-900 group-hover:text-brand-600 transition-colors">
@@ -752,13 +796,12 @@ export default async function EmployeesPage({
                       </td>
                       <td>
                         <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                            emp.role === "ADMIN"
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${emp.role === "ADMIN"
                               ? "bg-purple-100 text-purple-800"
                               : emp.role === "HR"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-ink-100 text-ink-700"
-                          }`}
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-ink-100 text-ink-700"
+                            }`}
                         >
                           {emp.role}
                         </span>
@@ -779,29 +822,27 @@ export default async function EmployeesPage({
                       </td>
                       <td>
                         <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            st === "PRESENT" || st === "HALF_DAY"
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${st === "PRESENT" || st === "HALF_DAY"
                               ? "bg-present-soft text-present"
                               : st === "LEAVE"
-                              ? "bg-leave-soft text-leave"
-                              : "bg-absent-soft text-absent"
-                          }`}
+                                ? "bg-leave-soft text-leave"
+                                : "bg-absent-soft text-absent"
+                            }`}
                         >
                           <span
-                            className={`h-2 w-2 rounded-full ${
-                              st === "PRESENT" || st === "HALF_DAY"
+                            className={`h-2 w-2 rounded-full ${st === "PRESENT" || st === "HALF_DAY"
                                 ? "bg-present"
                                 : st === "LEAVE"
-                                ? "bg-leave"
-                                : "bg-absent"
-                            }`}
+                                  ? "bg-leave"
+                                  : "bg-absent"
+                              }`}
                           />
                           {st === "PRESENT" ? "In Office" : st === "HALF_DAY" ? "Half Day" : st === "LEAVE" ? "On Leave" : "Absent"}
                         </span>
                       </td>
                       <td className="text-right">
                         <Link
-                          href={`/employees/${emp.id}`}
+                          href={profileHref(emp.id)}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800 hover:underline"
                         >
                           View Profile
@@ -862,11 +903,10 @@ export default async function EmployeesPage({
                         ...(view ? { view } : {}),
                         page: String(p),
                       }).toString()}`}
-                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${
-                        isCurrent
+                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${isCurrent
                           ? "bg-brand-600 text-white shadow-xs"
                           : "bg-surface text-ink-700 hover:bg-ink-100 border border-line"
-                      }`}
+                        }`}
                     >
                       {p}
                     </Link>
@@ -913,16 +953,15 @@ export default async function EmployeesPage({
               const borderAccent = isPresent
                 ? "border-t-present"
                 : isLeave
-                ? "border-t-leave"
-                : "border-t-absent";
+                  ? "border-t-leave"
+                  : "border-t-absent";
 
               return (
                 <li key={emp.id}>
                   <Link
-                    href={`/employees/${emp.id}`}
-                    className={`card group relative flex flex-col justify-between overflow-hidden border-t-4 ${borderAccent} ${
-                      !isActive ? "bg-orange-50/20 border-ink-300 opacity-90" : ""
-                    } p-4 transition-all duration-200 hover:-translate-y-1 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5 h-full`}
+                    href={profileHref(emp.id)}
+                    className={`card group relative flex flex-col justify-between overflow-hidden border-t-4 ${borderAccent} ${!isActive ? "bg-orange-50/20 border-ink-300 opacity-90" : ""
+                      } p-4 transition-all duration-200 hover:-translate-y-1 hover:border-brand-300 hover:shadow-md hover:shadow-brand-900/5 h-full`}
                   >
                     <div>
                       {/* Top Row: Avatar + Role Badge + Active/Inactive Status Badge */}
@@ -930,9 +969,8 @@ export default async function EmployeesPage({
                         <div className="relative">
                           <Avatar src={emp.avatar} name={`${emp.firstName} ${emp.lastName}`} size={52} />
                           <span
-                            className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface ${
-                              isPresent ? "bg-present" : isLeave ? "bg-leave" : "bg-absent"
-                            }`}
+                            className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface ${isPresent ? "bg-present" : isLeave ? "bg-leave" : "bg-absent"
+                              }`}
                             title={`Today: ${isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}`}
                           />
                         </div>
@@ -953,25 +991,16 @@ export default async function EmployeesPage({
                             )}
 
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                                emp.role === "ADMIN"
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${emp.role === "ADMIN"
                                   ? "bg-purple-100 text-purple-800"
                                   : emp.role === "HR"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-ink-100 text-ink-600"
-                              }`}
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-ink-100 text-ink-600"
+                                }`}
                             >
                               {emp.role}
                             </span>
                           </div>
-
-                          <span
-                            className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
-                              isPresent ? "text-present" : isLeave ? "text-leave" : "text-absent"
-                            }`}
-                          >
-                            {isPresent ? "In Office" : isLeave ? "On Leave" : "Absent"}
-                          </span>
                         </div>
                       </div>
 
@@ -1049,11 +1078,10 @@ export default async function EmployeesPage({
                         ...(view ? { view } : {}),
                         page: String(p),
                       }).toString()}`}
-                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${
-                        isCurrent
+                      className={`grid h-7 w-7 place-items-center rounded-md text-xs font-semibold transition ${isCurrent
                           ? "bg-brand-600 text-white shadow-xs"
                           : "bg-surface text-ink-700 hover:bg-ink-100 border border-line"
-                      }`}
+                        }`}
                     >
                       {p}
                     </Link>
