@@ -173,12 +173,14 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
             <dt className="label">Joined</dt>
             <dd className="num text-ink-800">{formatDate(employee.dateOfJoining)}</dd>
           </div>
-          <div>
-            <dt className="label">Manager</dt>
-            <dd className="text-ink-800">
-              {employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : "—"}
-            </dd>
-          </div>
+          {employee.role === "EMPLOYEE" ? (
+            <div>
+              <dt className="label">Manager</dt>
+              <dd className="text-ink-800">
+                {employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : "—"}
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </div>
 
