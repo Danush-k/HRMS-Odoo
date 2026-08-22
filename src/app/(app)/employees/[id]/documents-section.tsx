@@ -77,38 +77,32 @@ export function DocumentsSection({
     return res;
   }, idle);
 
-  // File upload state for form
-  const [fileData, setFileData] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [fileType, setFileType] = useState("");
-  const [fileSize, setFileSize] = useState(0);
+  // File upload state for form display
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: File | undefined) => {
-    if (!file) return;
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
 
     const validTypes = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
     if (!validTypes.includes(file.type.toLowerCase()) && !file.type.startsWith("image/")) {
       setFileError("Please select a PDF, PNG, or JPG file.");
+      setSelectedFile(null);
       return;
     }
 
     if (file.size > MAX_BYTES) {
       setFileError("File exceeds 5 MB limit. Please select a smaller file.");
+      setSelectedFile(null);
       return;
     }
 
     setFileError(null);
-    setFileName(file.name);
-    setFileType(file.type);
-    setFileSize(file.size);
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFileData(String(reader.result));
-    };
-    reader.readAsDataURL(file);
+    setSelectedFile(file);
   };
 
   const handleDelete = (docId: string) => {
@@ -140,10 +134,7 @@ export function DocumentsSection({
           <button
             type="button"
             onClick={() => {
-              setFileData("");
-              setFileName("");
-              setFileType("");
-              setFileSize(0);
+              setSelectedFile(null);
               setFileError(null);
               setUploadModalOpen(true);
             }}
@@ -183,10 +174,7 @@ export function DocumentsSection({
             <button
               type="button"
               onClick={() => {
-                setFileData("");
-                setFileName("");
-                setFileType("");
-                setFileSize(0);
+                setSelectedFile(null);
                 setFileError(null);
                 setUploadModalOpen(true);
               }}
@@ -213,7 +201,12 @@ export function DocumentsSection({
             </thead>
             <tbody className="divide-y divide-line">
               {documents.map((doc) => {
-                const isPdf = doc.fileType === "application/pdf" || doc.name.toLowerCase().endsWith(".pdf");
+                const isPdf =
+                  doc.fileType === "application/pdf" ||
+                  doc.name.toLowerCase().endsWith(".pdf") ||
+                  doc.fileData.includes(".pdf") ||
+                  doc.fileData.startsWith("data:application/pdf");
+
                 return (
                   <tr key={doc.id} className="transition-colors hover:bg-canvas/30">
                     <td className="px-5 py-3.5">
@@ -311,9 +304,6 @@ export function DocumentsSection({
               <FormMessage state={state} />
 
               <input type="hidden" name="employeeId" value={employeeId} />
-              <input type="hidden" name="fileData" value={fileData} />
-              <input type="hidden" name="fileType" value={fileType} />
-              <input type="hidden" name="fileSize" value={fileSize} />
 
               <Field label="Document Name" name="name" error={state.errors?.name} required>
                 <Input name="name" placeholder="e.g. Offer Letter, Passport, Resume" required />
@@ -336,6 +326,7 @@ export function DocumentsSection({
                 <input
                   ref={fileInputRef}
                   type="file"
+                  name="file"
                   accept=".pdf,image/png,image/jpeg,image/jpg"
                   className="hidden"
                   onChange={(e) => handleFileSelect(e.target.files?.[0])}
@@ -349,7 +340,7 @@ export function DocumentsSection({
                     Choose File
                   </button>
                   <span className="truncate text-xs text-ink-600">
-                    {fileName ? `${fileName} (${formatBytes(fileSize)})` : "No file chosen"}
+                    {selectedFile ? `${selectedFile.name} (${formatBytes(selectedFile.size)})` : "No file chosen"}
                   </span>
                 </div>
                 {fileError ? (
@@ -394,6 +385,8 @@ export function DocumentsSection({
                 <a
                   href={viewingDoc.fileData}
                   download={viewingDoc.name}
+                  target="_blank"
+                  rel="noreferrer"
                   className="btn-secondary btn-xs flex items-center gap-1"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -418,7 +411,9 @@ export function DocumentsSection({
 
             {/* Document Viewer Area */}
             <div className="flex-1 overflow-auto bg-canvas/60 p-4">
-              {viewingDoc.fileType === "application/pdf" || viewingDoc.fileData.startsWith("data:application/pdf") ? (
+              {viewingDoc.fileType === "application/pdf" ||
+              viewingDoc.fileData.startsWith("data:application/pdf") ||
+              viewingDoc.fileData.toLowerCase().endsWith(".pdf") ? (
                 <iframe
                   src={viewingDoc.fileData}
                   title={viewingDoc.name}

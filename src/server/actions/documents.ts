@@ -4,14 +4,7 @@ import { revalidatePath } from "next/cache";
 import { type ActionState, failure, success } from "@/lib/action-state";
 import { canDeleteDocument, canUploadDocuments, isManager, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-
-const MAX_DOCUMENT_BYTES = 5_000_000; // 5 MB
-const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-];
+import { deleteStoredFile, saveUploadedFile } from "@/lib/storage";
 
 const read = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
 
@@ -26,13 +19,12 @@ export async function uploadDocumentAction(_prev: ActionState, form: FormData): 
 
   const name = read(form, "name");
   const type = read(form, "type") || "Other";
-  const fileData = read(form, "fileData");
-  const fileType = read(form, "fileType");
-  const fileSizeStr = read(form, "fileSize");
-  const fileSize = parseInt(fileSizeStr, 10) || 0;
+  const file = form.get("file");
 
   if (!name) return failure("Please provide a document name.", { name: "Document name is required" });
-  if (!fileData) return failure("Please select a file to upload.", { file: "File is required" });
+  if (!file || typeof file === "string" || !(file instanceof Blob) || file.size === 0) {
+    return failure("Please select a file to upload.", { file: "File is required" });
+  }
 
   // Verify employee belongs to same company
   const target = await db.employee.findFirst({
@@ -45,13 +37,11 @@ export async function uploadDocumentAction(_prev: ActionState, form: FormData): 
     return failure("You are not authorized to upload documents for this employee.");
   }
 
-  // Validation
-  if (fileSize > MAX_DOCUMENT_BYTES) {
-    return failure("File is too large. Maximum size is 5 MB.");
-  }
-
-  if (fileType && !ALLOWED_MIME_TYPES.includes(fileType.toLowerCase())) {
-    return failure("Unsupported file type. Please upload a PDF, PNG, or JPG file.");
+  let saved;
+  try {
+    saved = await saveUploadedFile(file as File, "documents");
+  } catch (err: any) {
+    return failure(err.message || "Failed to process the uploaded file.");
   }
 
   const uploadedBy = actor.role === "EMPLOYEE" ? "EMPLOYEE" : actor.role;
@@ -61,9 +51,9 @@ export async function uploadDocumentAction(_prev: ActionState, form: FormData): 
       employeeId: targetId,
       name,
       category: type,
-      fileUrl: fileData,
-      mimeType: fileType || "application/octet-stream",
-      fileSize: fileSize || 0,
+      fileUrl: saved.fileUrl,
+      mimeType: saved.mimeType,
+      fileSize: saved.fileSize,
       uploadedBy,
     },
   });
@@ -91,6 +81,9 @@ export async function deleteDocumentAction(documentId: string): Promise<ActionSt
   await db.document.delete({
     where: { id: documentId },
   });
+
+  // Clean up stored file (either from Vercel Blob or local disk)
+  await deleteStoredFile(doc.fileUrl);
 
   revalidatePath(`/employees/${doc.employeeId}`);
   return success("Document deleted successfully.");
