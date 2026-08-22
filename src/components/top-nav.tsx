@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/employees", label: "Employees" },
   { href: "/attendance", label: "Attendance" },
   { href: "/time-off", label: "Time Off" },
+  { href: "/payroll", label: "Payroll" },
 ];
 
 export function TopNav({
