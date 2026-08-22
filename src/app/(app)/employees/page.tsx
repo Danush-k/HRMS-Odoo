@@ -235,7 +235,15 @@ export default async function EmployeesPage({
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-ink-900 uppercase tracking-wider">Recent Attendance Activity</h3>
-              <Link href="/attendance" className="text-xs font-semibold text-brand-600 hover:underline">View All</Link>
+              <Link
+                href="/attendance"
+                className="btn-primary inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-xs hover:shadow-sm transition-all active:scale-[0.98]"
+              >
+                View All
+                <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                </svg>
+              </Link>
             </div>
             {recentAttendance.length === 0 ? (
               <p className="text-xs text-ink-400 py-4 text-center">No attendance recorded recently.</p>
@@ -263,7 +271,15 @@ export default async function EmployeesPage({
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-ink-900 uppercase tracking-wider">My Leave Requests</h3>
-              <Link href="/time-off" className="text-xs font-semibold text-brand-600 hover:underline">Apply New</Link>
+              <Link
+                href="/time-off"
+                className="btn-primary inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-xs hover:shadow-sm transition-all active:scale-[0.98]"
+              >
+                Apply New
+                <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                </svg>
+              </Link>
             </div>
             {recentLeaveRequests.length === 0 ? (
               <p className="text-xs text-ink-400 py-4 text-center">No leave requests submitted yet.</p>

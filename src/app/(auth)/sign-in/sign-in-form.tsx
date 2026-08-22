@@ -31,6 +31,7 @@ export function SignInForm({ next }: { next?: string }) {
           />
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => setReveal((value) => !value)}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-1.5 py-1 text-[11px] font-semibold text-ink-500 hover:text-brand-600"
           >
