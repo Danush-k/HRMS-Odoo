@@ -645,6 +645,16 @@ export default async function EmployeesPage({
         </div>
       ) : null}
 
+      {/* Section Title */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-ink-900 tracking-tight">Employee Directory</h2>
+          <p className="text-xs text-ink-500">
+            Search, filter, and manage team members across all company departments
+          </p>
+        </div>
+      </div>
+
       {/* Toolbar & Filters */}
       <div className="card p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs rounded-xl">
         {/* Status Filter Segmented Control */}
