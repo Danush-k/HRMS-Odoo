@@ -147,7 +147,15 @@ export async function changePasswordAction(_prev: ActionState, form: FormData): 
     confirmPassword: read(form, "confirmPassword"),
   });
 
-  if (!parsed.success) return failure("Check the highlighted fields.", fieldErrors(parsed.error));
+  if (!parsed.success) {
+    const errors = fieldErrors(parsed.error);
+    const mainMsg =
+      errors.confirmPassword ||
+      errors.newPassword ||
+      errors.currentPassword ||
+      "Check the highlighted fields.";
+    return failure(mainMsg, errors);
+  }
 
   if (!(await bcrypt.compare(parsed.data.currentPassword, user.passwordHash))) {
     return failure("That is not your current password.", { currentPassword: "Incorrect password" });
