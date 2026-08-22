@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import { idle } from "@/lib/action-state";
@@ -41,6 +42,10 @@ export function SignInForm({ next }: { next?: string }) {
       <SubmitButton className="btn-primary mt-1 w-full" pendingLabel="Signing in…">
         Sign In
       </SubmitButton>
+
+      <Link href="/forgot-password" className="self-center text-sm font-medium text-brand-600 hover:underline">
+        Forgot your password?
+      </Link>
     </form>
   );
 }
