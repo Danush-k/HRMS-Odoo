@@ -9,10 +9,10 @@ import { db } from "@/lib/db";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
 
-  // Order matters: replace the system-issued password first (SRS 3.1.1).
+  // Order matters: replace the system-issued password first, then confirm the
+  // address (SRS 3.1.1). Both gates live here so no page can forget one.
   if (user.mustChangePassword) redirect("/first-login");
-  // Email verification check disabled for seamless navigation
-  // if (!user.emailVerifiedAt) redirect("/verify-email");
+  if (!user.emailVerifiedAt) redirect("/verify-email");
 
   const today = await db.attendance.findUnique({
     where: { employeeId_date: { employeeId: user.id, date: dayKey(new Date()) } },

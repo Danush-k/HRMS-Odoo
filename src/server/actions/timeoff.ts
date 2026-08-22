@@ -82,7 +82,7 @@ export async function requestLeaveAction(_prev: ActionState, form: FormData): Pr
     }
 
     try {
-      const saved = await saveUploadedFile(attachmentFile);
+      const saved = await saveUploadedFile(attachmentFile, "certificates");
       fileUrl = saved.fileUrl;
 
       await db.document.create({

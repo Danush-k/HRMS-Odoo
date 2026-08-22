@@ -42,7 +42,25 @@ export type SalaryBreakdown = {
   ctcMonthly: number;
 };
 
-const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+export const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+
+/**
+ * Basic plus every percent-of-basic component, before Fixed Allowance. Fixed
+ * Allowance is defined as wage minus this figure, so once it exceeds the wage
+ * there is nothing left to balance with — computeSalary would clamp Fixed
+ * Allowance to 0 and the listed components would silently total more than the
+ * wage. Callers check this before computeSalary, not after, so the structure
+ * is rejected instead of accepted and quietly wrong.
+ */
+export function allocatedBeforeFixed(input: SalaryInput) {
+  const wage = Math.max(0, input.monthlyWage);
+  const basic = round2((wage * input.basicPercent) / 100);
+  const hra = round2((basic * input.hraPercentOfBasic) / 100);
+  const standardAllowance = round2((basic * input.standardAllowancePercent) / 100);
+  const performanceBonus = round2((basic * input.performanceBonusPercent) / 100);
+  const lta = round2((basic * input.ltaPercent) / 100);
+  return round2(basic + hra + standardAllowance + performanceBonus + lta);
+}
 
 export function computeSalary(input: SalaryInput): SalaryBreakdown {
   const wage = Math.max(0, input.monthlyWage);

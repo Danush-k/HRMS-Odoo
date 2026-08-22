@@ -15,13 +15,22 @@ import { PrivateInfoForm } from "./private-info-form";
 import { ResumeForm } from "./resume-form";
 import { ResetPasswordPanel } from "./reset-password-panel";
 import { SalaryForm } from "./salary-form";
+import { SalaryHistory } from "./salary-history";
 
 export const metadata: Metadata = { title: "Employee" };
 
 const text = (value: string | null | undefined) => value ?? "";
 
-export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EmployeeProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const search = await searchParams;
+  const initialTab = search?.tab;
   const viewer = await requireUser();
 
   const isSelf = viewer.id === id;
@@ -117,7 +126,19 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
     ltaPercent: number;
     pfPercent: number;
     professionalTax: number;
+    effectiveFrom: Date;
   } | null) : null;
+
+  // History is an accountability record for the people who can change the
+  // structure, not a field the employee themselves needs — same boundary as
+  // editing it.
+  const salaryRevisions = showSalary && canEditSalary(viewer.role)
+    ? await db.salaryRevision.findMany({
+        where: { employeeId: employee.id },
+        orderBy: { effectiveTo: "desc" },
+        include: { changedBy: { select: { firstName: true, lastName: true } } },
+      })
+    : [];
 
   const tabs = [
     {
@@ -188,22 +209,27 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
       id: "salary",
       label: "Salary Info",
       content: (
-        <SalaryForm
-          employeeId={employee.id}
-          canEdit={canEditSalary(viewer.role)}
-          initial={{
-            monthlyWage: salary?.monthlyWage ?? 0,
-            workingDaysPerWeek: salary?.workingDaysPerWeek ?? 5,
-            breakHours: salary?.breakHours ?? 1,
-            basicPercent: salary?.basicPercent ?? 50,
-            hraPercentOfBasic: salary?.hraPercentOfBasic ?? 50,
-            standardAllowancePercent: salary?.standardAllowancePercent ?? 16.67,
-            performanceBonusPercent: salary?.performanceBonusPercent ?? 8.33,
-            ltaPercent: salary?.ltaPercent ?? 8.33,
-            pfPercent: salary?.pfPercent ?? 12,
-            professionalTax: salary?.professionalTax ?? 200,
-          }}
-        />
+        <div className="flex flex-col gap-5">
+          <SalaryForm
+            employeeId={employee.id}
+            canEdit={canEditSalary(viewer.role)}
+            initial={{
+              monthlyWage: salary?.monthlyWage ?? 0,
+              workingDaysPerWeek: salary?.workingDaysPerWeek ?? 5,
+              breakHours: salary?.breakHours ?? 1,
+              basicPercent: salary?.basicPercent ?? 50,
+              hraPercentOfBasic: salary?.hraPercentOfBasic ?? 50,
+              standardAllowancePercent: salary?.standardAllowancePercent ?? 16.67,
+              performanceBonusPercent: salary?.performanceBonusPercent ?? 8.33,
+              ltaPercent: salary?.ltaPercent ?? 8.33,
+              pfPercent: salary?.pfPercent ?? 12,
+              professionalTax: salary?.professionalTax ?? 200,
+            }}
+          />
+          {canEditSalary(viewer.role) ? (
+            <SalaryHistory revisions={salaryRevisions} currentSince={salary?.effectiveFrom ?? employee.dateOfJoining} />
+          ) : null}
+        </div>
       ),
     });
   }
@@ -340,7 +366,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
       />
 
       <div className="card px-5 pt-1 pb-5 sm:px-6">
-        <Tabs items={tabs} />
+        <Tabs items={tabs} initial={initialTab} />
       </div>
 
       {recentLeave.length > 0 ? (

@@ -25,6 +25,8 @@ const schema = z.object({
     .default(8),
 
   APP_URL: z.string().url("APP_URL must be a full URL, for example http://localhost:3000").default("http://localhost:3000"),
+  RESEND_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().optional(),
 
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
