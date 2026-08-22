@@ -168,11 +168,14 @@ export async function reviewLeaveAction(_prev: ActionState, form: FormData): Pro
 
   const request = await db.leaveRequest.findFirst({
     where: { id: requestId, employee: { companyId: actor.companyId } },
-    include: { leaveType: true },
+    include: { leaveType: true, employee: true },
   });
 
   if (!request) return failure("That request no longer exists.");
   if (request.status !== "PENDING") return failure("That request has already been reviewed.");
+  if (request.employee.role === "HR" && actor.role !== "ADMIN") {
+    return failure("Time off requests for HR officers must be reviewed by an Administrator.");
+  }
 
   try {
     await db.$transaction(async (tx) => {

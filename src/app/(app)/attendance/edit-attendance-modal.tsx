@@ -6,7 +6,9 @@ import { Modal } from "@/components/modal";
 import { Field, FormMessage, Input, Select, SubmitButton } from "@/components/ui";
 
 type AttendanceRecord = {
-  id: string;
+  id?: string;
+  employeeId?: string;
+  dateStr?: string;
   employeeName: string;
   checkIn: Date | null;
   checkOut: Date | null;
@@ -14,7 +16,27 @@ type AttendanceRecord = {
   note: string | null;
 };
 
-export function EditAttendanceModal({ record }: { record: AttendanceRecord }) {
+export function EditAttendanceModal({
+  record,
+  employeeId,
+  employeeName,
+  dateStr,
+}: {
+  record: AttendanceRecord | null;
+  employeeId?: string;
+  employeeName?: string;
+  dateStr?: string;
+}) {
+  const activeRecord: AttendanceRecord = record ?? {
+    employeeId,
+    dateStr,
+    employeeName: employeeName ?? "Employee",
+    checkIn: null,
+    checkOut: null,
+    status: "ABSENT",
+    note: "",
+  };
+
   const formatForInput = (d: Date | null) => {
     if (!d) return "";
     const date = new Date(d);
@@ -26,10 +48,10 @@ export function EditAttendanceModal({ record }: { record: AttendanceRecord }) {
     <Modal
       trigger="Edit"
       triggerClassName="btn-secondary btn-sm"
-      title={`Correct Attendance: ${record.employeeName}`}
+      title={`Correct Attendance: ${activeRecord.employeeName}`}
     >
       {(close) => (
-        <FormContent record={record} formatForInput={formatForInput} close={close} />
+        <FormContent record={activeRecord} formatForInput={formatForInput} close={close} />
       )}
     </Modal>
   );
@@ -53,7 +75,9 @@ function FormContent({
   return (
     <form action={action} className="flex flex-col gap-4">
       <FormMessage state={state} />
-      <input type="hidden" name="attendanceId" value={record.id} />
+      <input type="hidden" name="attendanceId" value={record.id ?? ""} />
+      <input type="hidden" name="employeeId" value={record.employeeId ?? ""} />
+      <input type="hidden" name="date" value={record.dateStr ?? ""} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Check In Time" name="checkIn">

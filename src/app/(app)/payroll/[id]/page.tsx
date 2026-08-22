@@ -113,47 +113,45 @@ export default async function PayslipPage({
         </div>
 
         <div className="px-6 py-4">
-          <p className="section-title">Earnings</p>
+          <p className="section-title text-emerald-800">Earnings</p>
           <ul className="mt-3 flex flex-col divide-y divide-line">
             {components.map((component) => (
               <li key={component.key} className="flex items-center justify-between py-2.5 text-sm">
                 <span className="text-ink-700">{component.label}</span>
-                <span className="mono font-medium text-ink-900">{formatCurrency(component.amount)}</span>
+                <span className="mono font-medium text-emerald-700">+ {formatCurrency(component.amount)}</span>
               </li>
             ))}
-            <li className="flex items-center justify-between py-2.5 text-sm font-semibold">
+            <li className="flex items-center justify-between py-2.5 text-sm font-semibold border-t border-line">
               <span className="text-ink-900">Gross (full month)</span>
-              <span className="mono text-ink-900">{formatCurrency(payslip.grossMonthly)}</span>
+              <span className="mono text-emerald-700 font-bold">{formatCurrency(payslip.grossMonthly)}</span>
             </li>
           </ul>
         </div>
 
         <div className="border-t border-line px-6 py-4">
-          <p className="section-title">Deductions</p>
+          <p className="section-title text-danger">Deductions</p>
           <ul className="mt-3 flex flex-col divide-y divide-line">
             <li className="flex items-center justify-between py-2.5 text-sm">
               <span className="text-ink-700">Provident Fund (employee)</span>
-              <span className="mono font-medium text-ink-900">{formatCurrency(payslip.pfEmployee)}</span>
+              <span className="mono font-medium text-danger">− {formatCurrency(payslip.pfEmployee)}</span>
             </li>
             <li className="flex items-center justify-between py-2.5 text-sm">
               <span className="text-ink-700">Professional Tax</span>
-              <span className="mono font-medium text-ink-900">{formatCurrency(payslip.professionalTax)}</span>
+              <span className="mono font-medium text-danger">− {formatCurrency(payslip.professionalTax)}</span>
             </li>
-            <li className="flex items-center justify-between py-2.5 text-sm font-semibold">
+            <li className="flex items-center justify-between py-2.5 text-sm font-semibold border-t border-line">
               <span className="text-ink-900">Total deductions</span>
-              <span className="mono text-ink-900">{formatCurrency(payslip.totalDeductions)}</span>
+              <span className="mono text-danger font-bold">− {formatCurrency(payslip.totalDeductions)}</span>
             </li>
           </ul>
         </div>
 
         <div className="flex items-center justify-between bg-brand-50 px-6 py-4">
           <div>
-            <p className="text-sm font-semibold text-ink-900">Net pay for {period}</p>
-            <p className="hint">
-              Prorated for {payslip.payableDays} of {payslip.totalWorkingDays} working days.
-            </p>
+            <p className="text-xs font-semibold text-brand-700 uppercase tracking-wider">Net Payable</p>
+            <p className="text-xs text-ink-500">Gross minus deductions for this pay period</p>
           </div>
-          <p className="mono text-xl font-bold text-ink-900">{formatCurrency(payslip.netPay)}</p>
+          <span className="mono text-2xl font-extrabold text-brand-700">{formatCurrency(payslip.netPay)}</span>
         </div>
       </div>
     </div>

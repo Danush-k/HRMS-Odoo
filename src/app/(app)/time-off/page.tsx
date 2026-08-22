@@ -164,13 +164,15 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
             </div>
           ) : null}
 
-          <RequestLeaveButton
-            leaveTypes={options}
-            employees={employeeOptions}
-            defaultEmployeeId={user.id}
-            canFileForOthers={manager}
-            publicHolidayDates={publicHolidays.map((h) => h.date.toISOString().slice(0, 10))}
-          />
+          {user.role !== "ADMIN" ? (
+            <RequestLeaveButton
+              leaveTypes={options}
+              employees={employeeOptions}
+              defaultEmployeeId={user.id}
+              canFileForOthers={manager}
+              publicHolidayDates={publicHolidays.map((h) => h.date.toISOString().slice(0, 10))}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -315,7 +317,11 @@ export default async function TimeOffPage({ searchParams }: { searchParams: Prom
                         ) : null}
                       </td>
                       <td className="text-right">
-                        {request.status === "PENDING" && manager ? (
+                        {request.status === "PENDING" && request.employee.role === "HR" && user.role !== "ADMIN" ? (
+                          <span className="inline-flex rounded bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700">
+                            Sent to Admin for Review
+                          </span>
+                        ) : request.status === "PENDING" && manager ? (
                           <ReviewButtons requestId={request.id} />
                         ) : request.status === "PENDING" && request.employeeId === user.id ? (
                           <CancelButton requestId={request.id} />

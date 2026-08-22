@@ -12,13 +12,7 @@ import { fieldErrors } from "@/lib/validations";
 
 const read = (form: FormData, key: string) => (form.get(key) as string | null) ?? undefined;
 
-const updateAttendanceSchema = z.object({
-  attendanceId: z.string().min(1, "Attendance ID is required"),
-  checkIn: z.string().optional(),
-  checkOut: z.string().optional(),
-  status: z.enum(["PRESENT", "ABSENT", "HALF_DAY", "LEAVE"]),
-  note: z.string().optional(),
-});
+
 
 /** Auto-closes open check-ins from past days for the user. */
 async function autoClosePastCheckIns(employeeId: string, standardHours: number) {
@@ -126,6 +120,16 @@ export async function checkOutAction(): Promise<ActionState> {
   return success("Checked out.");
 }
 
+const updateAttendanceSchema = z.object({
+  attendanceId: z.string().optional(),
+  employeeId: z.string().optional(),
+  date: z.string().optional(),
+  checkIn: z.string().optional(),
+  checkOut: z.string().optional(),
+  status: z.enum(["PRESENT", "ABSENT", "HALF_DAY", "LEAVE"]),
+  note: z.string().optional(),
+});
+
 /** T8: Admin/HR manual attendance correction action with audit log */
 export async function updateAttendanceAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const actor = await requireUser();
@@ -133,6 +137,8 @@ export async function updateAttendanceAction(_prev: ActionState, form: FormData)
 
   const parsed = updateAttendanceSchema.safeParse({
     attendanceId: read(form, "attendanceId"),
+    employeeId: read(form, "employeeId"),
+    date: read(form, "date"),
     checkIn: read(form, "checkIn"),
     checkOut: read(form, "checkOut"),
     status: read(form, "status"),
@@ -140,42 +146,70 @@ export async function updateAttendanceAction(_prev: ActionState, form: FormData)
   });
 
   if (!parsed.success) return failure("Check highlighted fields", fieldErrors(parsed.error));
-  const { attendanceId, checkIn, checkOut, status, note } = parsed.data;
+  const { attendanceId, employeeId, date: dateStr, checkIn, checkOut, status, note } = parsed.data;
 
-  const existing = await db.attendance.findFirst({
-    where: { id: attendanceId, employee: { companyId: actor.companyId } },
-  });
-  if (!existing) return failure("Attendance record not found.");
+  let existing = attendanceId
+    ? await db.attendance.findFirst({
+        where: { id: attendanceId, employee: { companyId: actor.companyId } },
+      })
+    : null;
 
-  const checkInDate = checkIn ? new Date(checkIn) : existing.checkIn;
-  const checkOutDate = checkOut ? new Date(checkOut) : existing.checkOut;
-  const workedMinutes = checkInDate && checkOutDate ? minutesBetween(checkInDate, checkOutDate) : existing.workedMinutes;
+  if (!existing && employeeId && dateStr) {
+    const targetDate = new Date(dateStr);
+    existing = await db.attendance.findUnique({
+      where: { employeeId_date: { employeeId, date: targetDate } },
+    });
+  }
+
+  const checkInDate = checkIn ? new Date(checkIn) : existing?.checkIn ?? null;
+  const checkOutDate = checkOut ? new Date(checkOut) : existing?.checkOut ?? null;
+  const workedMinutes = checkInDate && checkOutDate ? minutesBetween(checkInDate, checkOutDate) : existing?.workedMinutes ?? 0;
 
   await db.$transaction(async (tx) => {
-    await tx.attendance.update({
-      where: { id: existing.id },
-      data: {
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        workedMinutes,
-        status,
-        note: note || existing.note,
-      },
-    });
+    let recId = existing?.id;
 
-    await tx.auditLog.create({
-      data: {
-        companyId: actor.companyId,
-        actorId: actor.id,
-        action: "ATTENDANCE_UPDATE",
-        targetType: "Attendance",
-        targetId: existing.id,
-        changes: JSON.stringify({
-          before: { checkIn: existing.checkIn, checkOut: existing.checkOut, status: existing.status },
-          after: { checkIn: checkInDate, checkOut: checkOutDate, status },
-        }),
-      },
-    });
+    if (existing) {
+      await tx.attendance.update({
+        where: { id: existing.id },
+        data: {
+          checkIn: checkInDate,
+          checkOut: checkOutDate,
+          workedMinutes,
+          status,
+          note: note || existing.note,
+        },
+      });
+    } else if (employeeId && dateStr) {
+      const targetDate = new Date(dateStr);
+      const created = await tx.attendance.create({
+        data: {
+          employeeId,
+          date: targetDate,
+          checkIn: checkInDate,
+          checkOut: checkOutDate,
+          workedMinutes,
+          status,
+          note: note || "Manual HR entry",
+        },
+      });
+      recId = created.id;
+    }
+
+    if (recId) {
+      await tx.auditLog.create({
+        data: {
+          companyId: actor.companyId,
+          actorId: actor.id,
+          action: "ATTENDANCE_UPDATE",
+          targetType: "Attendance",
+          targetId: recId,
+          changes: JSON.stringify({
+            before: { checkIn: existing?.checkIn, checkOut: existing?.checkOut, status: existing?.status ?? "ABSENT" },
+            after: { checkIn: checkInDate, checkOut: checkOutDate, status },
+          }),
+        },
+      });
+    }
   });
 
   revalidatePath("/attendance");

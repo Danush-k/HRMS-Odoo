@@ -279,20 +279,23 @@ async function TeamDay({ params, companyId }: { params: Search; companyId: strin
                       <AttendanceChip status={row?.status ?? "ABSENT"} />
                     </td>
                     <td className="text-right">
-                      {row ? (
-                        <EditAttendanceModal
-                          record={{
-                            id: row.id,
-                            employeeName: `${employee.firstName} ${employee.lastName}`,
-                            checkIn: row.checkIn,
-                            checkOut: row.checkOut,
-                            status: row.status,
-                            note: row.note,
-                          }}
-                        />
-                      ) : (
-                        <span className="text-xs text-ink-300">—</span>
-                      )}
+                      <EditAttendanceModal
+                        record={
+                          row
+                            ? {
+                                id: row.id,
+                                employeeName: `${employee.firstName} ${employee.lastName}`,
+                                checkIn: row.checkIn,
+                                checkOut: row.checkOut,
+                                status: row.status,
+                                note: row.note,
+                              }
+                            : null
+                        }
+                        employeeId={employee.id}
+                        employeeName={`${employee.firstName} ${employee.lastName}`}
+                        dateStr={isoDay(day)}
+                      />
                     </td>
                   </tr>
                 );

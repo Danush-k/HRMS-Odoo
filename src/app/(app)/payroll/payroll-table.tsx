@@ -621,16 +621,16 @@ export function PayrollTable({
                                   {breakdown.components.map((c) => (
                                     <li key={c.key} className="flex justify-between text-ink-600">
                                       <span>{c.label}:</span>
-                                      <span className="mono font-medium text-ink-900">{formatCurrency(c.amount)}</span>
+                                      <span className="mono font-medium text-emerald-700">+ {formatCurrency(c.amount)}</span>
                                     </li>
                                   ))}
-                                  <li className="flex justify-between border-t border-line/60 pt-1 text-ink-700">
+                                  <li className="flex justify-between border-t border-line/60 pt-1 text-danger">
                                     <span>PF Employee:</span>
-                                    <span className="mono font-medium text-ink-900">{formatCurrency(breakdown.pfEmployee)}</span>
+                                    <span className="mono font-medium">− {formatCurrency(breakdown.pfEmployee)}</span>
                                   </li>
-                                  <li className="flex justify-between text-ink-700">
+                                  <li className="flex justify-between text-danger">
                                     <span>Prof. Tax:</span>
-                                    <span className="mono font-medium text-ink-900">{formatCurrency(breakdown.professionalTax)}</span>
+                                    <span className="mono font-medium">− {formatCurrency(breakdown.professionalTax)}</span>
                                   </li>
                                 </ul>
                               </div>
@@ -638,11 +638,11 @@ export function PayrollTable({
                           ) : null}
                         </td>
 
-                        <td className="mono text-ink-900 font-medium">
-                          {formatCurrency(payslip.totalDeductions)}
+                        <td className="mono text-danger font-medium">
+                          − {formatCurrency(payslip.totalDeductions)}
                         </td>
 
-                        <td className="mono font-bold text-ink-900">
+                        <td className="mono font-bold text-emerald-700">
                           {formatCurrency(payslip.netPay)}
                         </td>
 
