@@ -82,15 +82,19 @@ model Employee {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  manager          Employee?      @relation("Reports", fields: [managerId], references: [id], onDelete: SetNull)
-  reports          Employee[]     @relation("Reports")
-  salary           Salary?
-  attendances      Attendance[]
-  leaveRequests    LeaveRequest[] @relation("Requester")
-  reviewedRequests LeaveRequest[] @relation("Reviewer")
-  leaveBalances    LeaveBalance[]
-  tokens           VerificationToken[]
+  company             Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  manager             Employee?           @relation("Reports", fields: [managerId], references: [id], onDelete: SetNull)
+  reports             Employee[]          @relation("Reports")
+  salary              Salary?
+  salaryRevisions     SalaryRevision[]
+  salaryRevisionsMade SalaryRevision[]    @relation("SalaryChangedBy")
+  payslips            Payslip[]
+  payslipsGenerated   Payslip[]           @relation("PayslipGeneratedBy")
+  attendances         Attendance[]
+  leaveRequests       LeaveRequest[]      @relation("Requester")
+  reviewedRequests    LeaveRequest[]      @relation("Reviewer")
+  leaveBalances       LeaveBalance[]
+  tokens              VerificationToken[]
 
   @@index([companyId])
 }
@@ -112,9 +116,83 @@ model Salary {
   pfPercent                Float @default(12)
   professionalTax          Float @default(200)
 
-  updatedAt DateTime @updatedAt
+  /// When this structure took effect. Moved forward on every edit, and copied
+  /// into the outgoing SalaryRevision so history and current state share one
+  /// unbroken timeline instead of two.
+  effectiveFrom DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+/// A superseded salary structure. Written once, at the moment a structure stops
+/// applying, so a wage change never erases what the basis used to be — the gap
+/// this closes is that a payslip already issued, or a question about last
+/// quarter's basis, must be answerable from data instead of memory.
+model SalaryRevision {
+  id         String @id @default(cuid())
+  employeeId String
+
+  monthlyWage              Float
+  workingDaysPerWeek       Int
+  breakHours               Float
+  basicPercent             Float
+  hraPercentOfBasic        Float
+  standardAllowancePercent Float
+  performanceBonusPercent  Float
+  ltaPercent               Float
+  pfPercent                Float
+  professionalTax          Float
+
+  effectiveFrom DateTime
+  effectiveTo   DateTime
+
+  changedById String
+  createdAt   DateTime @default(now())
+
+  employee  Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  changedBy Employee @relation("SalaryChangedBy", fields: [changedById], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, effectiveFrom])
+}
+
+/// One frozen record per employee per month. Every figure is copied at
+/// generation time from Salary and from that month's attendance, and is never
+/// recomputed afterward — a salary change or an attendance correction made
+/// later must not silently rewrite a payslip already issued. Regenerating the
+/// same period is allowed and overwrites it; there is no draft or lock state.
+model Payslip {
+  id         String @id @default(cuid())
+  employeeId String
+
+  periodYear  Int
+  periodMonth Int // 1-12
+
+  monthlyWage     Float
+  basic           Float
+  grossMonthly    Float
+  pfEmployee      Float
+  pfEmployer      Float
+  professionalTax Float
+  totalDeductions Float
+  /// The full component breakdown (SalaryComponent[]) as JSON, so the payslip
+  /// can show every line even though only the totals above are indexed.
+  componentsJson  String
+
+  totalWorkingDays Float
+  payableDays      Float
+  paidLeaveDays    Float
+  /// Full month's net, prorated against payableDays / totalWorkingDays.
+  netPay           Float
+
+  generatedAt   DateTime @default(now())
+  generatedById String
+
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  generatedBy Employee @relation("PayslipGeneratedBy", fields: [generatedById], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, periodYear, periodMonth])
+  @@index([periodYear, periodMonth])
 }
 
 model LeaveType {
