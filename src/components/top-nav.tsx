@@ -32,7 +32,12 @@ export function TopNav({
 
   const links = [
     ...LINKS,
-    ...(isManager ? [{ href: "/audit-logs", label: "Audit Logs" }] : []),
+    ...(isManager
+      ? [
+          { href: "/reports", label: "Analytics & Reports" },
+          { href: "/audit-logs", label: "Audit Logs" },
+        ]
+      : []),
   ];
 
   return (

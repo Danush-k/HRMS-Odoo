@@ -40,6 +40,14 @@ export async function createEmployeeAction(_prev: ActionState, form: FormData): 
   if (!parsed.success) return failure("Check the highlighted fields.", fieldErrors(parsed.error));
   const data = parsed.data;
 
+  // Strict role creation permission rules:
+  if (actor.role === "HR" && data.role !== "EMPLOYEE") {
+    return failure("HR Officers can only add standard Employees.", { role: "HR can only create Employee role" });
+  }
+  if (actor.role === "ADMIN" && data.role === "ADMIN") {
+    return failure("Administrators can only add Employees or HR Officers.", { role: "Cannot create another Administrator" });
+  }
+
   if (await db.employee.findUnique({ where: { email: data.email } })) {
     return failure("That email is already registered.", { email: "This email already has an account" });
   }

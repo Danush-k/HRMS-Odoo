@@ -10,9 +10,20 @@ import { createEmployeeAction } from "@/server/actions/employees";
 
 const today = new Date().toISOString().slice(0, 10);
 
-export function NewEmployeeForm({ colleagues }: { colleagues: { id: string; name: string }[] }) {
+export function NewEmployeeForm({
+  actorRole = "ADMIN",
+  colleagues,
+}: {
+  actorRole?: string;
+  colleagues: { id: string; name: string }[];
+}) {
   const [state, action] = useActionState(createEmployeeAction, idle);
   const [copied, setCopied] = useState(false);
+
+  const allowedRoles =
+    actorRole === "HR"
+      ? ["EMPLOYEE"]
+      : ["EMPLOYEE", "HR"]; // ADMIN can add Employee or HR Officer, but not another Admin.
 
   // The credentials come back once. Keep the form on screen so they can be copied.
   if (state.ok && state.notice) {
@@ -88,9 +99,9 @@ export function NewEmployeeForm({ colleagues }: { colleagues: { id: string; name
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Role" name="role" error={state.errors?.role} required>
           <Select name="role" defaultValue="EMPLOYEE">
-            {ROLES.map((r) => (
+            {allowedRoles.map((r) => (
               <option key={r} value={r}>
-                {ROLE_LABEL[r]}
+                {ROLE_LABEL[r as keyof typeof ROLE_LABEL]}
               </option>
             ))}
           </Select>
