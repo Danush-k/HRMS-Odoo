@@ -39,7 +39,11 @@ export async function getCurrentUser() {
 /** Use in every protected page and server action. Middleware alone is not authorisation. */
 export async function requireUser() {
   const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
+  // Routed through /api/session/clear rather than straight to /sign-in: a
+  // session can fail here (revoked elsewhere) while still carrying a validly
+  // signed cookie, and this render can't delete that cookie itself — see the
+  // route handler for why that distinction matters.
+  if (!user) redirect("/api/session/clear");
   return user;
 }
 
